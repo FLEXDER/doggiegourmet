@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>Página no encontrada — Doggie Gourmet</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+
+  <!-- Mismas fuentes que el resto del sitio -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    :root {
+      --green: #73963C;
+      --green-dark: #5C7A2F;
+      --green-soft: #E8EFD9;
+      --brown: #4A3B10;
+      --brown-soft: #6B5826;
+      --cream: #FAF7F2;
+      --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', Georgia, serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: var(--font-body);
+      color: var(--brown);
+      background: var(--cream);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+      text-align: center;
+      background:
+        radial-gradient(ellipse at top, rgba(115, 150, 60, 0.06), transparent 60%),
+        radial-gradient(ellipse at bottom, rgba(74, 59, 16, 0.04), transparent 60%),
+        var(--cream);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 64px;
+      text-decoration: none;
+      color: var(--green);
+    }
+
+    .brand img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+    }
+
+    .brand-text {
+      text-align: left;
+      line-height: 1.1;
+    }
+
+    .brand-name {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--green);
+      letter-spacing: -0.01em;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--brown-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-top: 2px;
+    }
+
+    .num-404 {
+      font-family: var(--font-display);
+      font-size: clamp(96px, 18vw, 180px);
+      font-weight: 700;
+      line-height: 1;
+      color: var(--green);
+      letter-spacing: -0.04em;
+      margin-bottom: 24px;
+    }
+
+    .num-404 em {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-weight: 400;
+      color: var(--brown);
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 4.5vw, 44px);
+      font-weight: 600;
+      color: var(--brown);
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 20px;
+      max-width: 640px;
+    }
+
+    h1 em {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-weight: 400;
+      color: var(--green);
+    }
+
+    .lead {
+      font-size: clamp(16px, 1.4vw, 18px);
+      line-height: 1.6;
+      color: var(--brown-soft);
+      max-width: 480px;
+      margin-bottom: 40px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: 999px;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .btn-primary {
+      background: var(--green);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--green-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(115, 150, 60, 0.3);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--brown);
+      border: 1.5px solid rgba(74, 59, 16, 0.18);
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--brown);
+      background: rgba(74, 59, 16, 0.04);
+    }
+
+    .arrow {
+      display: inline-block;
+      transition: transform 0.15s ease;
+    }
+
+    .btn:hover .arrow {
+      transform: translateX(3px);
+    }
+
+    .footer-note {
+      margin-top: 64px;
+      font-size: 13px;
+      color: var(--brown-soft);
+      max-width: 360px;
+      line-height: 1.5;
+    }
+
+    .footer-note a {
+      color: var(--green);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .footer-note a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 480px) {
+      .actions { flex-direction: column; width: 100%; max-width: 280px; }
+      .btn { justify-content: center; width: 100%; }
+      .brand { margin-bottom: 40px; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <a class="brand" href="/">
+      <img src="assets/brand/isotipo.png" alt="Doggie Gourmet" />
+      <div class="brand-text">
+        <div class="brand-name">Doggie Gourmet</div>
+        <div class="brand-sub">Alimento · Estilo de vida</div>
+      </div>
+    </a>
+
+    <div class="num-404">4<em>0</em>4</div>
+
+    <h1>Esta página <em>se nos escapó</em>.</h1>
+
+    <p class="lead">
+      La URL que buscas no existe o se mudó de lugar.
+      Pero tranquilo — el resto del catálogo te espera.
+    </p>
+
+    <div class="actions">
+      <a class="btn btn-primary" href="/">
+        Volver al inicio
+        <span class="arrow">→</span>
+      </a>
+      <a class="btn btn-ghost" href="/#products">
+        Ver productos
+      </a>
+    </div>
+
+    <p class="footer-note">
+      ¿Llegaste aquí siguiendo un link? Cuéntanos en
+      <a href="mailto:doggiegourmetmx@gmail.com">doggiegourmetmx@gmail.com</a>
+      y lo arreglamos.
+    </p>
+  </main>
+</body>
+</html>
