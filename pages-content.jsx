@@ -35,7 +35,7 @@ function ProductsPage({ setRoute }) {
                 Productos gourmet <em>buenos chicos</em>.
               </h1>
             </div>
-            <p className="lead" style={{ height: "80.35px" }}>Tenemos diferentes productos pensados y diseñados en los diferentes tipos de mascota y necesidades de cada una de ellas. Desde su comida, su snack y hasta el perfume para antes de que llegue visita.
+            <p className="lead">Tenemos diferentes productos pensados y diseñados en los diferentes tipos de mascota y necesidades de cada una de ellas. Desde su comida, su snack y hasta el perfume para antes de que llegue visita.
 
             </p>
           </div>
