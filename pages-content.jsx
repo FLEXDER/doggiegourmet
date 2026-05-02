@@ -1,6 +1,16 @@
 /* global React, PRODUCTS, CATEGORY_ORDER, Icon, EMAIL */
 const { useState: useState2, useMemo: useMemo2 } = React;
 
+/* Helper: envuelve cualquier ocurrencia de "BARF" en un texto con
+   <span translate="no"> para evitar que Chrome lo traduzca a "Vómito". */
+function protectBarf(text) {
+  if (!text || typeof text !== 'string' || text.indexOf('BARF') === -1) return text;
+  const parts = text.split(/(BARF)/g);
+  return parts.map((part, i) =>
+    part === 'BARF' ? <span key={i} translate="no">BARF</span> : part
+  );
+}
+
 function ProductsPage({ setRoute }) {
   const [active, setActive] = useState2('all');
   const cats = CATEGORY_ORDER;
@@ -45,7 +55,7 @@ function ProductsPage({ setRoute }) {
             </button>
             {cats.map((id) =>
             <button key={id} className={`cat-tab ${active === id ? 'active' : ''}`} onClick={() => setActive(id)}>
-                {labels[id]} <span className="cat-tab-count">{PRODUCTS[id].items.length}</span>
+                <span translate="no">{labels[id]}</span> <span className="cat-tab-count">{PRODUCTS[id].items.length}</span>
               </button>
             )}
           </div>
@@ -59,8 +69,8 @@ function ProductsPage({ setRoute }) {
             <section key={id} id={`cat-${id}`} className="cat-section" style={{ scrollMarginTop: 88 }}>
               <div className="cat-section-head">
                 <div>
-                  <div className="num">0{idx + 1} · {labels[id].toUpperCase()}</div>
-                  <h3>{id === 'barf' ? <>Alimento <em>BARF</em></> : id === 'paletas' ? <>Paletas <em>Congeladas</em></> : <>Perfumes <em>para Mascotas</em></>}</h3>
+                  <div className="num">0{idx + 1} · <span translate="no">{labels[id].toUpperCase()}</span></div>
+                  <h3>{id === 'barf' ? <>Alimento <em translate="no">BARF</em></> : id === 'paletas' ? <>Paletas <em>Congeladas</em></> : <>Perfumes <em>para Mascotas</em></>}</h3>
                 </div>
                 <p>{cat.title}.<br />{cat.desc}</p>
               </div>
@@ -85,8 +95,8 @@ function ProductsPage({ setRoute }) {
             </div>
             <div className="banner-mock">
               <div className="banner-mock-head">▮ Reporte · ejemplo</div>
-              <div className="banner-mock-row"><span>BARF · Original 500g</span><span>12</span></div>
-              <div className="banner-mock-row"><span>BARF · Premium 500g</span><span>8</span></div>
+              <div className="banner-mock-row"><span><span translate="no">BARF</span> · Original 500g</span><span>12</span></div>
+              <div className="banner-mock-row"><span><span translate="no">BARF</span> · Premium 500g</span><span>8</span></div>
               <div className="banner-mock-row"><span>Paleta · Plátano</span><span>20</span></div>
               <div className="banner-mock-row"><span>Perfume · Pawer Bomb</span><span>5</span></div>
             </div>
@@ -108,7 +118,7 @@ function ProductCard({ p, category }) {
       </div>
       <div className="product-body">
         <div className="product-name">{p.name}</div>
-        <p className="product-desc">{p.desc}</p>
+        <p className="product-desc">{protectBarf(p.desc)}</p>
         <div className="product-foot">
           <span className="product-size">{p.size}</span>
           <button className="product-arrow" aria-label="Detalle"><Icon name="arrow" size={14} /></button>
