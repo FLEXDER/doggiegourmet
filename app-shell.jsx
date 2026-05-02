@@ -183,17 +183,19 @@ alimentación natural y balanceada. Nuestro objetivo es mejorar la calidad de 
 
       <div className="strip">
         <div className="strip-inner">
-          {Array.from({ length: 2 }).flatMap((_, k) => [
-          <span key={`a${k}`} className="strip-item">100% Natural</span>,
-          <span key={`b${k}`} className="strip-dot" />,
-          <span key={`c${k}`} className="strip-item">Alimento <em>BARF</em></span>,
-          <span key={`d${k}`} className="strip-dot" />,
-          <span key={`e${k}`} className="strip-item">Paletas Congeladas</span>,
-          <span key={`f${k}`} className="strip-dot" />,
-          <span key={`g${k}`} className="strip-item">Perfumes <em>Pet-safe</em></span>,
-          <span key={`h${k}`} className="strip-dot" />,
-          <span key={`i${k}`} className="strip-item">Hecho en México</span>,
-          <span key={`j${k}`} className="strip-dot" />]
+          {Array.from({ length: 4 }).map((_, k) =>
+          <div className="strip-set" key={k} aria-hidden={k > 0 ? 'true' : undefined}>
+              <span className="strip-item">100% Natural</span>
+              <span className="strip-dot" />
+              <span className="strip-item">Alimento <em translate="no">BARF</em></span>
+              <span className="strip-dot" />
+              <span className="strip-item">Paletas Congeladas</span>
+              <span className="strip-dot" />
+              <span className="strip-item">Perfumes <em>Pet-safe</em></span>
+              <span className="strip-dot" />
+              <span className="strip-item">Hecho en México</span>
+              <span className="strip-dot" />
+            </div>
           )}
         </div>
       </div>
