@@ -2,6 +2,20 @@
 const { useState: uSC, useMemo: uMC, useEffect: uEC, useRef: uRC } = React;
 const { BREEDS, FEEDING_TABLE, ACTIVITY_MULT } = window;
 
+/* ============================================================
+   LÍMITES DE PESO POR ESPECIE
+   - MIN: rango razonable mínimo (chihuahuas ~1kg, gatos pequeños)
+   - MAX_SLIDER: tope del slider visual
+   - MAX_HARD: tope absoluto - no se acepta nada arriba de esto
+   - WARN: si el peso supera este valor, mostramos confirmación
+   ============================================================ */
+const WEIGHT_LIMITS = {
+  perro: { min: 1, max_slider: 50, max_hard: 90, warn: 60 },
+  gato:  { min: 1, max_slider: 12, max_hard: 15, warn: 10 },
+};
+
+const DEFAULT_WEIGHT = { perro: 15, gato: 5 };
+
 function interpolateRow(peso, edadKey) {
   const t = FEEDING_TABLE;
   if (peso <= t[0].peso) return t[0][edadKey];
@@ -113,14 +127,38 @@ function useCountUp(target, duration = 800) {
 
 function CalculatorPage({ setRoute }) {
   const [step, setStep] = uSC(0); // 0..5 form steps, 6 = loading, 7 = result
-  const [especie, setEspecie] = uSC('perro');
-  const [peso, setPeso] = uSC(15);
+  const [especie, setEspecieRaw] = uSC('perro');
+  const [peso, setPesoRaw] = uSC(15);
   const [raza, setRaza] = uSC('Mestizo / Sin raza');
   const [razaSearch, setRazaSearch] = uSC('');
   const [edad, setEdad] = uSC('adulto');
   const [actividad, setActividad] = uSC('moderada');
   const [periodo, setPeriodo] = uSC('mensual');
   const [perros, setPerros] = uSC(1);
+
+  // Límites actuales según la especie
+  const limits = WEIGHT_LIMITS[especie];
+
+  // Setter de peso con clamping (no permite valores fuera del rango)
+  const setPeso = (val) => {
+    const num = Number(val);
+    if (isNaN(num) || num <= 0) return setPesoRaw(0); // Permite vacío para que pueda escribir
+    const clamped = Math.min(Math.max(num, 0), limits.max_hard);
+    setPesoRaw(clamped);
+  };
+
+  // Cambio de especie: ajusta el peso si quedó fuera del rango nuevo
+  const setEspecie = (nueva) => {
+    setEspecieRaw(nueva);
+    const newLimits = WEIGHT_LIMITS[nueva];
+    if (peso < newLimits.min || peso > newLimits.max_slider) {
+      setPesoRaw(DEFAULT_WEIGHT[nueva]);
+    }
+  };
+
+  // Indicador de peso "sospechoso" para mostrar advertencia
+  const isWeightSuspicious = peso >= limits.warn;
+  const isWeightInvalid = peso <= 0 || peso > limits.max_hard;
 
   // Filtered breeds for search
   const filteredBreeds = uMC(() => {
@@ -198,7 +236,7 @@ Cantidad: ${perros}
 Periodo: ${periodoLabel}
 
 Producto recomendado: ${productoLabel}
-Porción diaria: ${calc.gramsPerDay} g
+Porción diaria: ${calc.gramosDia} g
 Bolsas recomendadas: ${periodoData.bolsas}
 Presentación: ${presentacionLabel}
 
@@ -254,23 +292,50 @@ Quiero entrega a domicilio.`;
               <div className="calc2-weight-tag">{tamañoLabel}</div>
               <div className="calc2-weight-slider-wrap">
                 <input
-                  type="range" min={especie === 'gato' ? 1 : 2} max={especie === 'gato' ? 12 : 50} step="0.5" value={peso}
+                  type="range" min={limits.min} max={limits.max_slider} step="0.5" value={Math.min(peso, limits.max_slider)}
                   onChange={e => setPeso(Number(e.target.value))}
                   className="calc2-slider"
-                  style={{'--pct': `${((peso - (especie === 'gato' ? 1 : 2))/((especie === 'gato' ? 12 : 50) - (especie === 'gato' ? 1 : 2)))*100}%`}}
+                  style={{'--pct': `${((Math.min(peso, limits.max_slider) - limits.min)/(limits.max_slider - limits.min))*100}%`}}
                 />
                 <div className="calc2-weight-marks">
-                  <span>{especie === 'gato' ? '1 kg' : '2 kg'}</span>
-                  <span>{especie === 'gato' ? '6 kg' : '25 kg'}</span>
-                  <span>{especie === 'gato' ? '12 kg' : '50 kg'}</span>
+                  <span>{limits.min} kg</span>
+                  <span>{Math.round((limits.min + limits.max_slider) / 2)} kg</span>
+                  <span>{limits.max_slider} kg</span>
                 </div>
               </div>
               <div className="calc2-manual">
                 <span>O ingresa manualmente:</span>
-                <input type="number" min="1" max="80" step="0.5" value={peso} onChange={e => setPeso(Number(e.target.value) || 0)}/>
+                <input
+                  type="number"
+                  min={limits.min}
+                  max={limits.max_hard}
+                  step="0.5"
+                  value={peso || ''}
+                  onChange={e => setPeso(e.target.value)}
+                  placeholder="kg"
+                />
                 <span>kg</span>
               </div>
-              <StepFooter step={step} onPrev={prev} onNext={next}/>
+              {isWeightSuspicious && peso <= limits.max_hard && (
+                <div style={{
+                  marginTop: 16, padding: '12px 16px', borderRadius: 12,
+                  background: 'rgba(220, 150, 50, 0.12)', border: '1px solid rgba(220, 150, 50, 0.3)',
+                  color: 'var(--brown)', fontSize: 14, lineHeight: 1.5
+                }}>
+                  ⚠️ <strong>{peso} kg es un peso inusual</strong> para {especie === 'gato' ? 'un gato' : 'un perro'}.
+                  ¿Estás seguro? Si lo escribiste por error, ajusta el valor antes de continuar.
+                </div>
+              )}
+              {peso === 0 && (
+                <div style={{
+                  marginTop: 16, padding: '12px 16px', borderRadius: 12,
+                  background: 'rgba(200, 50, 50, 0.08)', border: '1px solid rgba(200, 50, 50, 0.2)',
+                  color: '#a33', fontSize: 14
+                }}>
+                  Ingresa el peso de tu mascota para continuar.
+                </div>
+              )}
+              <StepFooter step={step} onPrev={prev} onNext={next} nextDisabled={isWeightInvalid}/>
             </Step>
           )}
 
@@ -399,13 +464,18 @@ function Step({ title, hint, children }) {
   );
 }
 
-function StepFooter({ step, onPrev, onNext, nextLabel }) {
+function StepFooter({ step, onPrev, onNext, nextLabel, nextDisabled }) {
   return (
     <div className="calc2-step-footer">
       <button className="calc2-back" onClick={onPrev} disabled={step === 0}>
         <span style={{display: 'inline-flex', transform: 'scaleX(-1)'}}><Icon name="arrow" size={14}/></span> Atrás
       </button>
-      <button className="calc2-next" onClick={onNext}>
+      <button
+        className="calc2-next"
+        onClick={onNext}
+        disabled={nextDisabled}
+        style={nextDisabled ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+      >
         {nextLabel || 'Continuar'} <Icon name="arrow" size={14}/>
       </button>
     </div>
@@ -521,9 +591,15 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
         ← Recalcular con otros datos
       </button>
 
-      <p className="calc2-disclaimer">
-        Las recomendaciones son estimadas. Consulta a tu veterinario para casos especiales.
-      </p>
+      <div className="calc2-disclaimer" style={{
+        marginTop: 24, padding: '14px 18px', borderRadius: 12,
+        background: 'rgba(92, 122, 47, 0.08)', border: '1px solid rgba(92, 122, 47, 0.2)',
+        fontSize: 13, lineHeight: 1.6, color: 'var(--brown)'
+      }}>
+        <strong style={{ color: 'var(--green)' }}>ℹ️ Nota importante:</strong> Las recomendaciones son estimadas con base en
+        peso, edad y actividad. Para mascotas con condiciones especiales (sobrepeso, gestación, enfermedades, alergias),
+        consulta a tu veterinario antes de iniciar la dieta BARF.
+      </div>
     </div>
   );
 }
