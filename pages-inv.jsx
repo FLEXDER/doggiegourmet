@@ -45,6 +45,14 @@ const PIN_PROFILES = {
 
 const STORAGE_KEY = 'dg_inventory_reports_v1';
 
+/* ============================================================
+   EMAIL DELIVERY — Web3Forms
+   Cambia WEB3FORMS_KEY por tu access key real (web3forms.com).
+   El correo llega a la cuenta que registraste en Web3Forms.
+   ============================================================ */
+const WEB3FORMS_KEY = '242b11d0-38a4-48f3-b031-fa3730aac48d';
+const WEB3FORMS_ENDPOINT = 'https://api.web3forms.com/submit';
+
 /* Default product list — used as suggestions when adding rows */
 const PRODUCT_SUGGESTIONS = [
   'BARF Original 500g',
@@ -211,8 +219,11 @@ function PosReportForm({ profile, onLogout }) {
   const validRows = useM3(() => rows.filter((r) => r.product.trim() && r.requested !== ''), [rows]);
   const canSubmit = validRows.length > 0;
 
-  const submit = () => {
-    if (!canSubmit) return;
+  const [sending, setSending] = useS3(false);
+  const [sendError, setSendError] = useS3('');
+
+  const submit = async () => {
+    if (!canSubmit || sending) return;
     const report = {
       id: 'rep-' + Date.now(),
       submittedAt: new Date().toISOString(),
@@ -228,11 +239,77 @@ function PosReportForm({ profile, onLogout }) {
         notes: r.notes.trim()
       }))
     };
+
+    // 1) Guardar en localStorage (compatibilidad con vista local)
     const all = loadReports();
     all.unshift(report);
     saveReports(all);
-    setSubmitted(report);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // 2) Enviar correo vía Web3Forms
+    setSending(true);
+    setSendError('');
+
+    const totalUds = report.items.reduce((a, b) => a + b.requested, 0);
+    const fechaMx = new Date(report.submittedAt).toLocaleString('es-MX', {
+      dateStyle: 'long',
+      timeStyle: 'short'
+    });
+    const productosTxt = report.items.
+      map((it, i) =>
+      `${String(i + 1).padStart(2, '0')}. ${it.product} — ${it.requested} uds.${it.notes ? ' (' + it.notes + ')' : ''}`
+      ).
+      join('\n');
+
+    const message =
+    `REPORTE DE INVENTARIO\n` +
+    `${'─'.repeat(40)}\n\n` +
+    `Punto de venta: ${report.business}\n` +
+    `Contacto: ${report.contact}\n` +
+    `Teléfono: ${report.phone || '—'}\n` +
+    `Ubicación: ${report.city || '—'}\n` +
+    `Fecha: ${fechaMx}\n` +
+    `ID del reporte: ${report.id.toUpperCase()}\n\n` +
+    `PRODUCTOS SOLICITADOS (${report.items.length})\n` +
+    `${'─'.repeat(40)}\n` +
+    `${productosTxt}\n\n` +
+    `Total de unidades solicitadas: ${totalUds}\n`;
+
+    try {
+      const res = await fetch(WEB3FORMS_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify({
+          access_key: WEB3FORMS_KEY,
+          subject: `Reporte de inventario · ${report.business}`,
+          from_name: `Doggie Gourmet · ${report.business}`,
+          message,
+          // Campos extra (visibles en el dashboard de Web3Forms)
+          negocio: report.business,
+          contacto: report.contact,
+          telefono: report.phone || '',
+          ubicacion: report.city || '',
+          total_productos: report.items.length,
+          total_unidades: totalUds,
+          report_id: report.id
+        })
+      });
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.message || 'Error desconocido');
+      }
+      setSubmitted(report);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      console.error('Web3Forms error:', err);
+      setSendError(
+        'No se pudo enviar el reporte por correo. Quedó guardado localmente. Revisa tu conexión e intenta de nuevo.'
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
   const startNew = () => {
@@ -356,9 +433,10 @@ function PosReportForm({ profile, onLogout }) {
             <div className="inv2-submit-info">
               <strong>{validRows.length} {validRows.length === 1 ? 'producto listo' : 'productos listos'} para enviar</strong>
               <span>{profile.business} · {new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+              {sendError && <span style={{ color: '#c0392b', marginTop: 6, display: 'block' }}>{sendError}</span>}
             </div>
-            <button className="btn btn-primary btn-lg" disabled={!canSubmit} onClick={submit}>
-              Enviar reporte de inventario <Icon name="arrow" size={14} />
+            <button className="btn btn-primary btn-lg" disabled={!canSubmit || sending} onClick={submit}>
+              {sending ? 'Enviando…' : <>Enviar reporte de inventario <Icon name="arrow" size={14} /></>}
             </button>
           </div>
         </div>
