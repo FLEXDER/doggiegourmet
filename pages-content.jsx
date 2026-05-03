@@ -110,12 +110,33 @@ function ProductsPage({ setRoute }) {
 function ProductCard({ p, category }) {
   const imgClass = category === 'perfumes' ? 'product-img tall' : category === 'paletas' ? 'product-img paleta' : 'product-img';
   const tagClass = category === 'barf' ? 'product-tag green' : 'product-tag';
+
+  // Cantidad actual en el carrito (se mantiene sincronizada vía evento global 'cart-changed')
+  const [cartQty, setCartQty] = React.useState(0);
+  React.useEffect(() => {
+    const update = () => {
+      const items = window.cartStore ? window.cartStore.getItems() : [];
+      const found = items.find((it) => it.id === p.id);
+      setCartQty(found ? found.quantity : 0);
+    };
+    update();
+    window.addEventListener('cart-changed', update);
+    return () => window.removeEventListener('cart-changed', update);
+  }, [p.id]);
+
   const handleAdd = (e) => {
     e.stopPropagation();
-    if (window.addToCart) {
-      window.addToCart(p);
-    }
+    if (window.addToCart) window.addToCart(p);
   };
+  const handleInc = (e) => {
+    e.stopPropagation();
+    if (window.cartStore) window.cartStore.increment(p.id);
+  };
+  const handleDec = (e) => {
+    e.stopPropagation();
+    if (window.cartStore) window.cartStore.decrement(p.id);
+  };
+
   return (
     <article className="product-card">
       <div className={imgClass}>
@@ -139,31 +160,100 @@ function ProductCard({ p, category }) {
             </span>
           }
         </div>
-        <button
-          onClick={handleAdd}
-          style={{
+        {cartQty === 0 ?
+          <button
+            onClick={handleAdd}
+            style={{
+              marginTop: 14,
+              width: '100%',
+              background: 'var(--green)',
+              color: 'white',
+              border: 'none',
+              padding: '11px 18px',
+              borderRadius: 100,
+              fontFamily: 'inherit',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              transition: 'all 0.15s ease',
+              letterSpacing: '0.01em'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--green-dark)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--green)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
+            <Icon name="cart" size={14} /> Agregar al carrito
+          </button> :
+
+          <div style={{
             marginTop: 14,
             width: '100%',
             background: 'var(--green)',
             color: 'white',
-            border: 'none',
-            padding: '11px 18px',
             borderRadius: 100,
-            fontFamily: 'inherit',
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            transition: 'all 0.15s ease',
-            letterSpacing: '0.01em'
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--green-dark)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--green)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
-          <Icon name="cart" size={14} /> Agregar al carrito
-        </button>
+            justifyContent: 'space-between',
+            padding: '4px',
+            transition: 'all 0.15s ease'
+          }}>
+            <button
+              onClick={handleDec}
+              aria-label="Quitar uno"
+              style={{
+                background: 'rgba(255,255,255,0.18)',
+                border: 'none',
+                width: 36,
+                height: 36,
+                borderRadius: 100,
+                color: 'white',
+                fontSize: 18,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background 0.15s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.3)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.18)'; }}>
+              −
+            </button>
+            <div style={{
+              flex: 1,
+              textAlign: 'center',
+              fontSize: 13,
+              fontWeight: 600,
+              letterSpacing: '0.02em'
+            }}>
+              {cartQty} en el carrito
+            </div>
+            <button
+              onClick={handleInc}
+              aria-label="Agregar uno"
+              style={{
+                background: 'rgba(255,255,255,0.18)',
+                border: 'none',
+                width: 36,
+                height: 36,
+                borderRadius: 100,
+                color: 'white',
+                fontSize: 18,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background 0.15s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.3)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.18)'; }}>
+              +
+            </button>
+          </div>
+        }
       </div>
     </article>);
 
