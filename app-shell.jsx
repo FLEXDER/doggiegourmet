@@ -30,7 +30,8 @@ const Icon = ({ name, size = 16 }) => {
     paw: <><circle cx="11" cy="4" r="2" /><circle cx="18" cy="8" r="2" /><circle cx="4" cy="8" r="2" /><circle cx="20" cy="16" r="2" transform="rotate(0)" /><path d="M11 12c-3 0-5 3-5 5 0 2 2 3 5 3s5-1 5-3c0-2-2-5-5-5z" /></>,
     lock: <><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>,
     inventory: <><path d="M3 9h18M3 9V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2M3 9v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9M9 14h6" /></>,
-    refresh: <><path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-6.7-3M3 12a9 9 0 0 1 9-9 9 9 0 0 1 6.7 3" /><path d="M21 3v6h-6M3 21v-6h6" /></>
+    refresh: <><path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-6.7-3M3 12a9 9 0 0 1 9-9 9 9 0 0 1 6.7 3" /><path d="M21 3v6h-6M3 21v-6h6" /></>,
+    cart: <><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" /></>
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -52,6 +53,7 @@ const NAV_ITEMS = [
 
 function Nav({ route, setRoute }) {
   const [open, setOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
   return (
     <header className="nav">
       <div className="container nav-inner">
@@ -71,10 +73,15 @@ function Nav({ route, setRoute }) {
             </button>
           )}
         </nav>
-        <button className="nav-mobile-toggle" onClick={() => setOpen(!open)} aria-label="Menú">
-          <Icon name={open ? 'x' : 'menu'} size={20} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <window.CartButton onClick={() => setCartOpen(true)} />
+          <button className="nav-mobile-toggle" onClick={() => setOpen(!open)} aria-label="Menú">
+            <Icon name={open ? 'x' : 'menu'} size={20} />
+          </button>
+        </div>
       </div>
+      <window.CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
+      <window.CartToast />
     </header>);
 
 }
