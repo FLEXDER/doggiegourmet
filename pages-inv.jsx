@@ -2,58 +2,17 @@
 const { useState: useS3, useMemo: useM3, useEffect: useE3, useRef: useR3 } = React;
 
 /* ============================================================
-   PIN PROFILES — easy to change later or swap for Supabase auth
+   CLIENTE SUPABASE (inicializado en supabase-client.js)
    ============================================================ */
-const PIN_PROFILES = {
-  '4827': {
-    id: 'vitalpets',
-    role: 'pos',
-    business: 'Hospital Veterinario VitalPets',
-    contact: 'Maite o Dr. Mario',
-    email: '',
-    phone: '3313300906',
-    city: 'Av. Tepeyac 4153'
-  },
-  '7394': {
-    id: 'wuftown',
-    role: 'pos',
-    business: 'Wuftown',
-    contact: 'Sofia',
-    email: '',
-    phone: '3334450519',
-    city: 'C. José María Morelos 1862'
-  },
-  '6158': {
-    id: 'venelatto',
-    role: 'pos',
-    business: 'Venelatto',
-    contact: 'Pato',
-    email: '',
-    phone: '3330176961',
-    city: 'Plaza Terranova, Local J4–J5'
-  },
-  '9063': {
-    id: 'master',
-    role: 'master',
-    business: 'Master Interno',
-    contact: 'Doggie Gourmet',
-    email: '',
-    phone: '',
-    city: ''
-  }
-};
-
-const STORAGE_KEY = 'dg_inventory_reports_v1';
+const sb = window.supabaseClient;
 
 /* ============================================================
-   EMAIL DELIVERY — Web3Forms
-   Cambia WEB3FORMS_KEY por tu access key real (web3forms.com).
-   El correo llega a la cuenta que registraste en Web3Forms.
+   EMAIL DELIVERY — Web3Forms (notificación de nuevos reportes)
    ============================================================ */
 const WEB3FORMS_KEY = '242b11d0-38a4-48f3-b031-fa3730aac48d';
 const WEB3FORMS_ENDPOINT = 'https://api.web3forms.com/submit';
 
-/* Default product list — used as suggestions when adding rows */
+/* Sugerencias de productos para el autocomplete */
 const PRODUCT_SUGGESTIONS = [
   'BARF Original 500g',
   'BARF Original Perros Chicos 250g',
@@ -72,46 +31,77 @@ const PRODUCT_SUGGESTIONS = [
   'Perfume La Vie Est Woof 100ml'
 ];
 
-/* ------------ Storage helpers (swap with Supabase later) ------------ */
-function loadReports() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    return [];
-  }
-}
-function saveReports(list) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch (e) {}
-}
-
 /* ============================================================
-   ROOT — handles PIN gate and routes to POS form or Master
+   ROOT — máquina de estados de autenticación
+   - Sin sesión, modo POS  → PinGate
+   - Sin sesión, modo Master → MasterLogin
+   - Con sesión POS (PIN OK) → PosReportForm
+   - Con sesión Master (auth) → MasterDashboard
    ============================================================ */
 function InventoryPage() {
-  const [profile, setProfile] = useS3(null);
+  const [posProfile, setPosProfile] = useS3(null);
+  const [masterSession, setMasterSession] = useS3(undefined); // undefined = aún cargando
+  const [showMasterLogin, setShowMasterLogin] = useS3(false);
 
-  if (!profile) {
-    return <PinGate onUnlock={setProfile} />;
+  // Detecta sesión activa de master al cargar y se suscribe a cambios
+  useE3(() => {
+    sb.auth.getSession().then(({ data }) => {
+      setMasterSession(data.session || null);
+    });
+    const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
+      setMasterSession(session || null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (masterSession === undefined) {
+    return <LoadingScreen />;
   }
-  if (profile.role === 'master') {
-    return <MasterDashboard profile={profile} onLogout={() => setProfile(null)} />;
+  if (masterSession) {
+    return <MasterDashboard
+      session={masterSession}
+      onLogout={async () => { await sb.auth.signOut(); }} />;
   }
-  return <PosReportForm profile={profile} onLogout={() => setProfile(null)} />;
+  if (posProfile) {
+    return <PosReportForm profile={posProfile} onLogout={() => setPosProfile(null)} />;
+  }
+  if (showMasterLogin) {
+    return <MasterLogin onCancel={() => setShowMasterLogin(false)} />;
+  }
+  return <PinGate
+    onUnlock={setPosProfile}
+    onMasterClick={() => setShowMasterLogin(true)} />;
 }
 
 /* ============================================================
-   PIN GATE
+   LOADING SCREEN
    ============================================================ */
-function PinGate({ onUnlock }) {
+function LoadingScreen() {
+  return (
+    <div className="pin-gate-page">
+      <div className="pin-gate-shell" style={{ alignItems: 'center', justifyContent: 'center' }}>
+        <div className="pin-gate-card" style={{ textAlign: 'center', padding: 60, minWidth: 280 }}>
+          <p style={{ color: 'var(--brown-soft)', fontSize: 14 }}>Cargando...</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   PIN GATE — POS (validación contra Supabase)
+   ============================================================ */
+function PinGate({ onUnlock, onMasterClick }) {
   const [pin, setPin] = useS3('');
   const [error, setError] = useS3('');
   const [shake, setShake] = useS3(false);
+  const [loading, setLoading] = useS3(false);
   const inputRefs = useR3([]);
 
   useE3(() => { inputRefs.current[0] && inputRefs.current[0].focus(); }, []);
 
   const setDigit = (idx, val) => {
+    if (loading) return;
     const clean = val.replace(/\D/g, '').slice(0, 1);
     const arr = pin.padEnd(4, ' ').split('');
     arr[idx] = clean || ' ';
@@ -130,14 +120,36 @@ function PinGate({ onUnlock }) {
     }
   };
 
-  const tryUnlock = (code) => {
-    const p = PIN_PROFILES[code];
-    if (p) {
-      onUnlock(p);
-    } else {
+  const tryUnlock = async (code) => {
+    setLoading(true);
+    setError('');
+    try {
+      const { data, error: rpcError } = await sb.rpc('verify_pin', { p_pin: code });
+      if (rpcError) throw rpcError;
+      const profile = data && data.length > 0 ? data[0] : null;
+      if (profile && profile.role === 'pos') {
+        onUnlock(profile);
+        return;
+      }
+      // PIN no encontrado o rol incorrecto
       setError('PIN incorrecto. Intenta de nuevo.');
       setShake(true);
-      setTimeout(() => { setShake(false); setPin(''); inputRefs.current[0] && inputRefs.current[0].focus(); }, 500);
+      setTimeout(() => {
+        setShake(false);
+        setPin('');
+        inputRefs.current[0] && inputRefs.current[0].focus();
+      }, 500);
+    } catch (err) {
+      console.error('verify_pin error:', err);
+      setError('Error de conexión. Verifica tu internet.');
+      setShake(true);
+      setTimeout(() => {
+        setShake(false);
+        setPin('');
+        inputRefs.current[0] && inputRefs.current[0].focus();
+      }, 500);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -156,7 +168,7 @@ function PinGate({ onUnlock }) {
             Ingresa el PIN de tu punto de venta para acceder al formulario.
           </p>
 
-          <div className={`pin-row ${shake ? 'shake' : ''}`}>
+          <div className={`pin-row ${shake ? 'shake' : ''}`} style={{ opacity: loading ? 0.6 : 1 }}>
             {[0, 1, 2, 3].map((i) =>
               <input
                 key={i}
@@ -169,16 +181,40 @@ function PinGate({ onUnlock }) {
                 value={pin[i] || ''}
                 onChange={(e) => setDigit(i, e.target.value)}
                 onKeyDown={(e) => onKeyDown(i, e)}
-                autoComplete="off" />
+                autoComplete="off"
+                disabled={loading} />
             )}
           </div>
 
-          {error && <div className="pin-err">{error}</div>}
+          {loading && (
+            <div style={{ color: 'var(--brown-soft)', fontSize: 13, marginTop: 12, textAlign: 'center' }}>
+              Validando...
+            </div>
+          )}
+          {error && !loading && <div className="pin-err">{error}</div>}
 
           <div className="pin-gate-foot">
             <Icon name="lock" size={12} />
             <span>Datos protegidos · uso interno Doggie Gourmet</span>
           </div>
+
+          <button
+            type="button"
+            onClick={onMasterClick}
+            style={{
+              marginTop: 20,
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--green)',
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              textUnderlineOffset: 3,
+              padding: 4
+            }}>
+            Acceso de administración →
+          </button>
         </div>
 
         <div className="pin-gate-aside">
@@ -193,18 +229,137 @@ function PinGate({ onUnlock }) {
           </div>
         </div>
       </div>
-    </div>);
-
+    </div>
+  );
 }
 
 /* ============================================================
-   POS REPORT FORM
+   MASTER LOGIN — email + password (Supabase Auth)
+   ============================================================ */
+function MasterLogin({ onCancel }) {
+  const [email, setEmail] = useS3('');
+  const [password, setPassword] = useS3('');
+  const [loading, setLoading] = useS3(false);
+  const [error, setError] = useS3('');
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (loading) return;
+    setLoading(true);
+    setError('');
+    try {
+      const { error: authError } = await sb.auth.signInWithPassword({ email, password });
+      if (authError) throw authError;
+      // El cambio de sesión es manejado por onAuthStateChange en InventoryPage
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Email o contraseña incorrectos.');
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="pin-gate-page">
+      <div className="pin-gate-shell">
+        <div className="pin-gate-card">
+          <div className="pin-gate-eyebrow">
+            <span className="dot" />
+            <span>Administración</span>
+          </div>
+          <h1 className="pin-gate-title">
+            Master <em>Interno</em>
+          </h1>
+          <p className="pin-gate-sub">
+            Ingresa con tu correo y contraseña para acceder al dashboard de reportes.
+          </p>
+
+          <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 4 }}>
+            <div className="field">
+              <label className="field-label"><span>Correo</span></label>
+              <input
+                className="field-input"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tu@correo.com"
+                disabled={loading}
+                autoComplete="email" />
+            </div>
+            <div className="field">
+              <label className="field-label"><span>Contraseña</span></label>
+              <input
+                className="field-input"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                disabled={loading}
+                autoComplete="current-password" />
+            </div>
+
+            {error && <div className="pin-err">{error}</div>}
+
+            <button
+              type="submit"
+              className="btn btn-primary btn-lg"
+              disabled={loading || !email || !password}
+              style={{ marginTop: 4, justifyContent: 'center' }}>
+              {loading ? 'Validando...' : <>Entrar <Icon name="arrow" size={14} /></>}
+            </button>
+          </form>
+
+          <div className="pin-gate-foot">
+            <Icon name="lock" size={12} />
+            <span>Acceso restringido · solo administradores</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={onCancel}
+            style={{
+              marginTop: 20,
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--brown-soft)',
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              textUnderlineOffset: 3,
+              padding: 4
+            }}>
+            ← Volver al acceso de puntos de venta
+          </button>
+        </div>
+
+        <div className="pin-gate-aside">
+          <div className="pin-gate-aside-eyebrow">Master interno</div>
+          <p>
+            Esta área es solo para administradores de Doggie Gourmet. Aquí puedes ver todos los reportes de inventario enviados por los puntos de venta.
+          </p>
+          <div className="pin-gate-aside-list">
+            <div><span>01</span> Reportes en tiempo real</div>
+            <div><span>02</span> Historial completo de pedidos</div>
+            <div><span>03</span> Cambia el estatus de cada reporte</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   POS REPORT FORM — formulario para puntos de venta
    ============================================================ */
 function PosReportForm({ profile, onLogout }) {
   const [rows, setRows] = useS3([
     { id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), product: '', requested: '', notes: '' }
   ]);
   const [submitted, setSubmitted] = useS3(null);
+  const [sending, setSending] = useS3(false);
+  const [sendError, setSendError] = useS3('');
 
   const updateRow = (id, key, val) => {
     setRows((r) => r.map((row) => row.id === id ? { ...row, [key]: val } : row));
@@ -219,102 +374,113 @@ function PosReportForm({ profile, onLogout }) {
   const validRows = useM3(() => rows.filter((r) => r.product.trim() && r.requested !== ''), [rows]);
   const canSubmit = validRows.length > 0;
 
-  const [sending, setSending] = useS3(false);
-  const [sendError, setSendError] = useS3('');
-
   const submit = async () => {
     if (!canSubmit || sending) return;
-    const report = {
-      id: 'rep-' + Date.now(),
-      submittedAt: new Date().toISOString(),
-      posId: profile.id,
-      business: profile.business,
-      contact: profile.contact,
-      phone: profile.phone,
-      city: profile.city,
-      status: 'Recibido',
-      items: validRows.map((r) => ({
-        product: r.product.trim(),
-        requested: Number(r.requested) || 0,
-        notes: r.notes.trim()
-      }))
-    };
-
-    // 1) Guardar en localStorage (compatibilidad con vista local)
-    const all = loadReports();
-    all.unshift(report);
-    saveReports(all);
-
-    // 2) Enviar correo vía Web3Forms
     setSending(true);
     setSendError('');
 
-    const totalUds = report.items.reduce((a, b) => a + b.requested, 0);
-    const fechaMx = new Date(report.submittedAt).toLocaleString('es-MX', {
-      dateStyle: 'long',
-      timeStyle: 'short'
-    });
-    const productosTxt = report.items.
-      map((it, i) =>
-      `${String(i + 1).padStart(2, '0')}. ${it.product} — ${it.requested} uds.${it.notes ? ' (' + it.notes + ')' : ''}`
-      ).
-      join('\n');
+    const itemsToInsert = validRows.map((r) => ({
+      product: r.product.trim(),
+      requested: Number(r.requested) || 0,
+      notes: r.notes.trim() || null
+    }));
 
-    const message =
-    `REPORTE DE INVENTARIO\n` +
-    `${'─'.repeat(40)}\n\n` +
-    `Punto de venta: ${report.business}\n` +
-    `Contacto: ${report.contact}\n` +
-    `Teléfono: ${report.phone || '—'}\n` +
-    `Ubicación: ${report.city || '—'}\n` +
-    `Fecha: ${fechaMx}\n` +
-    `ID del reporte: ${report.id.toUpperCase()}\n\n` +
-    `PRODUCTOS SOLICITADOS (${report.items.length})\n` +
-    `${'─'.repeat(40)}\n` +
-    `${productosTxt}\n\n` +
-    `Total de unidades solicitadas: ${totalUds}\n`;
+    let savedReport = null;
 
+    // 1) Insertar el reporte en Supabase
     try {
-      const res = await fetch(WEB3FORMS_ENDPOINT, {
+      const { data: reportData, error: reportError } = await sb
+        .from('inventory_reports')
+        .insert({
+          pos_id: profile.id,
+          business: profile.business,
+          contact: profile.contact,
+          status: 'Recibido'
+        })
+        .select()
+        .single();
+
+      if (reportError) throw reportError;
+
+      // Insertar los items del reporte
+      const itemsWithReportId = itemsToInsert.map(it => ({ ...it, report_id: reportData.id }));
+      const { error: itemsError } = await sb
+        .from('inventory_report_items')
+        .insert(itemsWithReportId);
+
+      if (itemsError) throw itemsError;
+
+      savedReport = {
+        id: reportData.id,
+        submittedAt: reportData.submitted_at,
+        posId: reportData.pos_id,
+        business: reportData.business,
+        contact: reportData.contact,
+        phone: profile.phone,
+        city: profile.city,
+        status: reportData.status,
+        items: itemsToInsert.map(it => ({ ...it, notes: it.notes || '' }))
+      };
+    } catch (err) {
+      console.error('Supabase insert error:', err);
+      setSendError('No se pudo guardar el reporte. Verifica tu internet e intenta de nuevo.');
+      setSending(false);
+      return;
+    }
+
+    // 2) Mandar correo de notificación via Web3Forms (no bloqueante si falla)
+    try {
+      const totalUds = itemsToInsert.reduce((a, b) => a + b.requested, 0);
+      const fechaMx = new Date(savedReport.submittedAt).toLocaleString('es-MX', {
+        dateStyle: 'long', timeStyle: 'short'
+      });
+      const productosTxt = itemsToInsert.map((it, i) =>
+        `${String(i + 1).padStart(2, '0')}. ${it.product} — ${it.requested} uds.${it.notes ? ' (' + it.notes + ')' : ''}`
+      ).join('\n');
+      const message =
+        `REPORTE DE INVENTARIO\n` +
+        `${'─'.repeat(40)}\n\n` +
+        `Punto de venta: ${profile.business}\n` +
+        `Contacto: ${profile.contact}\n` +
+        `Teléfono: ${profile.phone || '—'}\n` +
+        `Ubicación: ${profile.city || '—'}\n` +
+        `Fecha: ${fechaMx}\n` +
+        `ID del reporte: ${savedReport.id}\n\n` +
+        `PRODUCTOS SOLICITADOS (${itemsToInsert.length})\n` +
+        `${'─'.repeat(40)}\n` +
+        `${productosTxt}\n\n` +
+        `Total de unidades solicitadas: ${totalUds}\n`;
+
+      await fetch(WEB3FORMS_ENDPOINT, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
           access_key: WEB3FORMS_KEY,
-          subject: `Reporte de inventario · ${report.business}`,
-          from_name: `Doggie Gourmet · ${report.business}`,
+          subject: `Reporte de inventario · ${profile.business}`,
+          from_name: `Doggie Gourmet · ${profile.business}`,
           message,
-          // Campos extra (visibles en el dashboard de Web3Forms)
-          negocio: report.business,
-          contacto: report.contact,
-          telefono: report.phone || '',
-          ubicacion: report.city || '',
-          total_productos: report.items.length,
+          negocio: profile.business,
+          contacto: profile.contact,
+          telefono: profile.phone || '',
+          ubicacion: profile.city || '',
+          total_productos: itemsToInsert.length,
           total_unidades: totalUds,
-          report_id: report.id
+          report_id: savedReport.id
         })
       });
-      const data = await res.json();
-      if (!data.success) {
-        throw new Error(data.message || 'Error desconocido');
-      }
-      setSubmitted(report);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      console.error('Web3Forms error:', err);
-      setSendError(
-        'No se pudo enviar el reporte por correo. Quedó guardado localmente. Revisa tu conexión e intenta de nuevo.'
-      );
-    } finally {
-      setSending(false);
+      console.warn('Web3Forms notification failed (no bloqueante):', err);
     }
+
+    setSubmitted(savedReport);
+    setSending(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const startNew = () => {
     setRows([{ id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), product: '', requested: '', notes: '' }]);
     setSubmitted(null);
+    setSendError('');
   };
 
   if (submitted) {
@@ -326,107 +492,114 @@ function PosReportForm({ profile, onLogout }) {
       <PosHeader profile={profile} onLogout={onLogout} />
 
       <div className="container">
-        <div className="inv2-grid">
-          {/* LOCKED BUSINESS INFO */}
-          <section className="inv2-card inv2-biz-card">
-            <header className="inv2-card-head">
-              <div className="inv2-card-head-l">
-                <span className="inv2-card-num">01</span>
-                <div>
-                  <h3>Datos del negocio</h3>
-                  <p>Información prellenada según tu perfil. <em>Solo lectura.</em></p>
-                </div>
+        <div className="inv2-form">
+          <h2 className="inv2-section-title">
+            Reporte de <em>inventario</em>
+          </h2>
+          <p className="inv2-section-sub">
+            Captura los productos y la cantidad que solicitas. Lo recibimos en tiempo real.
+          </p>
+
+          {/* DATOS DEL NEGOCIO */}
+          <div className="inv2-section">
+            <div className="inv2-section-head">
+              <div className="inv2-section-num">01</div>
+              <div className="inv2-section-info">
+                <h3>Datos del negocio</h3>
+                <p>Información prellenada según tu perfil. <em>Solo lectura.</em></p>
               </div>
               <div className="inv2-locked-badge">
-                <Icon name="lock" size={11} />
-                <span>Bloqueado</span>
-              </div>
-            </header>
-            <div className="inv2-card-body">
-              <div className="inv2-biz-grid">
-                <BizField label="Nombre del negocio" value={profile.business} />
-                <BizField label="Persona de contacto" value={profile.contact} />
-                <BizField label="Teléfono" value={profile.phone || '—'} />
-                <BizField label="Ciudad / Ubicación" value={profile.city || '—'} full />
+                <Icon name="lock" size={11} /> Bloqueado
               </div>
             </div>
-          </section>
-
-          {/* PRODUCT ROWS */}
-          <section className="inv2-card">
-            <header className="inv2-card-head">
-              <div className="inv2-card-head-l">
-                <span className="inv2-card-num">02</span>
-                <div>
-                  <h3>Productos e inventario</h3>
-                  <p>Agrega los productos que necesitas reportar y solicitar.</p>
-                </div>
+            <div className="inv2-bizgrid">
+              <div className="inv2-bizfield">
+                <span className="lbl">Nombre del negocio</span>
+                <span className="val">{profile.business}</span>
               </div>
-              <div className="inv2-row-count">
-                <strong>{validRows.length}</strong>
-                <span>{validRows.length === 1 ? 'producto' : 'productos'}</span>
+              <div className="inv2-bizfield">
+                <span className="lbl">Persona de contacto</span>
+                <span className="val">{profile.contact}</span>
               </div>
-            </header>
+              <div className="inv2-bizfield">
+                <span className="lbl">Teléfono</span>
+                <span className="val">{profile.phone || '—'}</span>
+              </div>
+              <div className="inv2-bizfield">
+                <span className="lbl">Ciudad / ubicación</span>
+                <span className="val">{profile.city || '—'}</span>
+              </div>
+            </div>
+          </div>
 
-            <div className="inv2-card-body">
-              <datalist id="dg-product-suggestions">
-                {PRODUCT_SUGGESTIONS.map((p) => <option key={p} value={p} />)}
-              </datalist>
+          {/* PRODUCTOS */}
+          <div className="inv2-section">
+            <div className="inv2-section-head">
+              <div className="inv2-section-num">02</div>
+              <div className="inv2-section-info">
+                <h3>Productos e inventario</h3>
+                <p>Agrega los productos que necesitas reportar y solicitar.</p>
+              </div>
+              <div className="inv2-pcount">
+                <strong>{validRows.length}</strong> <span>productos</span>
+              </div>
+            </div>
 
-              <div className="inv2-rows">
-                <div className="inv2-rows-head">
-                  <span></span>
-                  <span>Producto</span>
-                  <span>Cantidad solicitada</span>
-                  <span>Notas</span>
-                  <span></span>
+            <div className="inv2-rows-head">
+              <div className="col-num">#</div>
+              <div className="col-prod">Producto</div>
+              <div className="col-qty">Cantidad solicitada</div>
+              <div className="col-notes">Notas</div>
+              <div className="col-x"></div>
+            </div>
+
+            <datalist id="dg-products">
+              {PRODUCT_SUGGESTIONS.map((p) => <option key={p} value={p} />)}
+            </datalist>
+
+            {rows.map((row, i) =>
+              <div className="inv2-row" key={row.id}>
+                <div className="col-num">{String(i + 1).padStart(2, '0')}</div>
+                <div className="col-prod">
+                  <input
+                    list="dg-products"
+                    className="inv2-input"
+                    placeholder="Nombre del producto"
+                    value={row.product}
+                    onChange={(e) => updateRow(row.id, 'product', e.target.value)} />
                 </div>
-
-                {rows.map((row, idx) =>
-                <div className="inv2-prow" key={row.id}>
-                    <div className="inv2-prow-num">{String(idx + 1).padStart(2, '0')}</div>
-                    <div className="inv2-prow-cell inv2-prow-product">
-                      <input
-                      list="dg-product-suggestions"
-                      className="inv2-input"
-                      placeholder="Nombre del producto"
-                      value={row.product}
-                      onChange={(e) => updateRow(row.id, 'product', e.target.value)} />
-                    </div>
-                    <div className="inv2-prow-cell" data-lbl="Cantidad solicitada">
-                      <input
-                      type="number"
-                      min="0"
-                      className="inv2-input inv2-input-num"
-                      placeholder="0"
-                      value={row.requested}
-                      onChange={(e) => updateRow(row.id, 'requested', e.target.value)} />
-                    </div>
-                    <div className="inv2-prow-cell" data-lbl="Notas">
-                      <input
-                      className="inv2-input"
-                      placeholder="Caducidad, lote, comentario…"
-                      value={row.notes}
-                      onChange={(e) => updateRow(row.id, 'notes', e.target.value)} />
-                    </div>
-                    <button
-                    className="inv2-prow-remove"
+                <div className="col-qty">
+                  <input
+                    type="number"
+                    min="0"
+                    inputMode="numeric"
+                    className="inv2-input num"
+                    placeholder="0"
+                    value={row.requested}
+                    onChange={(e) => updateRow(row.id, 'requested', e.target.value)} />
+                </div>
+                <div className="col-notes">
+                  <input
+                    className="inv2-input"
+                    placeholder="Caducidad, lote, comentario..."
+                    value={row.notes}
+                    onChange={(e) => updateRow(row.id, 'notes', e.target.value)} />
+                </div>
+                <div className="col-x">
+                  <button
+                    className="inv2-row-x"
                     onClick={() => removeRow(row.id)}
-                    disabled={rows.length === 1}
-                    aria-label="Eliminar fila"
-                    title={rows.length === 1 ? 'Mínimo una fila' : 'Eliminar producto'}>
-
-                      <Icon name="x" size={14} />
-                    </button>
-                  </div>
-                )}
+                    disabled={rows.length === 1}>
+                    <Icon name="x" size={12} />
+                  </button>
+                </div>
               </div>
+            )}
 
-              <button className="inv2-add-btn" onClick={addRow}>
-                <span className="plus">+</span> Agregar producto
-              </button>
-            </div>
-          </section>
+            <button className="inv2-add-row" onClick={addRow}>
+              <span className="plus"><Icon name="plus" size={11} /></span> Agregar producto
+            </button>
+          </div>
 
           {/* SUBMIT */}
           <div className="inv2-submit-bar">
@@ -445,15 +618,6 @@ function PosReportForm({ profile, onLogout }) {
 
 }
 
-function BizField({ label, value, full }) {
-  return (
-    <div className={`inv2-biz-field ${full ? 'full' : ''}`}>
-      <div className="inv2-biz-label">{label}</div>
-      <div className="inv2-biz-value">{value}</div>
-    </div>);
-
-}
-
 function PosHeader({ profile, onLogout }) {
   return (
     <div className="inv2-hero">
@@ -462,13 +626,13 @@ function PosHeader({ profile, onLogout }) {
           <div>
             <div className="inv2-hero-eyebrow">
               <span className="dot" />
-              <span>Sesión activa · {profile.business}</span>
+              <span>{profile.business}</span>
             </div>
             <h1 className="inv2-hero-title">
-              Reporte de <em>inventario</em>
+              Hola, <em>{profile.contact ? profile.contact.split(' ')[0] : 'punto de venta'}</em>.
             </h1>
             <p className="inv2-hero-sub">
-              Captura los productos y la cantidad que solicitas. Lo recibimos en tiempo real.
+              Reporta tu inventario actual. Te respondemos en cuanto lo recibamos.
             </p>
           </div>
           <button className="inv2-logout" onClick={onLogout}>
@@ -481,40 +645,25 @@ function PosHeader({ profile, onLogout }) {
 }
 
 function PosSuccessView({ report, onNew, onLogout }) {
-  const totalRequested = report.items.reduce((a, b) => a + b.requested, 0);
+  const totalReq = report.items.reduce((a, b) => a + b.requested, 0);
+  const date = new Date(report.submittedAt);
+  const idShort = String(report.id).slice(0, 8).toUpperCase();
   return (
     <div className="inv2-page">
-      <PosHeader profile={{ business: report.business }} onLogout={onLogout} />
+      <PosHeader profile={{ business: report.business, contact: report.contact }} onLogout={onLogout} />
       <div className="container">
         <div className="inv2-success">
-          <div className="inv2-success-check">
-            <Icon name="check" size={32} />
-          </div>
-          <h2 className="inv2-success-title">
-            Reporte enviado <em>correctamente.</em>
-          </h2>
-          <p className="inv2-success-sub">
-            Recibimos tu inventario, {report.contact.split(' ')[0] || 'amig@'}. Lo procesaremos en las próximas horas y te confirmaremos el envío.
-          </p>
-
           <div className="inv2-success-card">
-            <div className="inv2-success-card-head">
-              <div>
-                <div className="lbl">Reporte</div>
-                <div className="val mono">{report.id.toUpperCase()}</div>
-              </div>
-              <div>
-                <div className="lbl">Fecha y hora</div>
-                <div className="val">{new Date(report.submittedAt).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })}</div>
-              </div>
-              <div>
-                <div className="lbl">Punto de venta</div>
-                <div className="val">{report.business}</div>
-              </div>
-              <div>
-                <div className="lbl">Productos</div>
-                <div className="val">{report.items.length} · {totalRequested} unidades solicitadas</div>
-              </div>
+            <div className="modal-check"><Icon name="check" size={28} /></div>
+            <h2>Reporte recibido. <em>¡Gracias!</em></h2>
+            <p>Tu reporte fue guardado correctamente. El equipo de Doggie Gourmet ya lo está procesando.</p>
+
+            <div className="inv2-success-meta">
+              <div><span>Folio</span><strong>{idShort}</strong></div>
+              <div><span>Fecha</span><strong>{date.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}</strong></div>
+              <div><span>Hora</span><strong>{date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</strong></div>
+              <div><span>Productos</span><strong>{report.items.length}</strong></div>
+              <div><span>Unidades</span><strong>{totalReq}</strong></div>
             </div>
 
             <div className="inv2-success-list">
@@ -541,39 +690,88 @@ function PosSuccessView({ report, onNew, onLogout }) {
 }
 
 /* ============================================================
-   MASTER DASHBOARD
+   MASTER DASHBOARD — lee reportes de Supabase
    ============================================================ */
-function MasterDashboard({ profile, onLogout }) {
-  const [reports, setReports] = useS3(() => loadReports());
+function MasterDashboard({ session, onLogout }) {
+  const [reports, setReports] = useS3([]);
+  const [loading, setLoading] = useS3(true);
   const [filter, setFilter] = useS3('all');
   const [statusFilter, setStatusFilter] = useS3('all');
   const [expanded, setExpanded] = useS3(null);
 
-  const refresh = () => setReports(loadReports());
+  // Profile sintético del master (no viene de tabla, viene de auth)
+  const profile = {
+    id: 'master',
+    role: 'master',
+    business: 'Master Interno',
+    contact: (session && session.user && session.user.email) || 'Doggie Gourmet'
+  };
+
+  const loadReports = async () => {
+    setLoading(true);
+    const { data, error } = await sb
+      .from('inventory_reports')
+      .select(`
+        id, pos_id, business, contact, status, submitted_at,
+        inventory_report_items (id, product, requested, notes)
+      `)
+      .order('submitted_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading reports:', error);
+      setReports([]);
+    } else {
+      const transformed = (data || []).map(r => ({
+        id: r.id,
+        posId: r.pos_id,
+        business: r.business,
+        contact: r.contact,
+        phone: '',
+        city: '',
+        status: r.status,
+        submittedAt: r.submitted_at,
+        items: (r.inventory_report_items || []).map(it => ({
+          product: it.product,
+          requested: it.requested,
+          notes: it.notes || ''
+        }))
+      }));
+      setReports(transformed);
+    }
+    setLoading(false);
+  };
 
   useE3(() => {
-    const onStorage = () => refresh();
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    loadReports();
   }, []);
 
-  const updateStatus = (id, status) => {
-    const all = loadReports().map((r) => r.id === id ? { ...r, status } : r);
-    saveReports(all);
-    setReports(all);
+  const refresh = () => loadReports();
+
+  const updateStatus = async (id, status) => {
+    const { error } = await sb
+      .from('inventory_reports')
+      .update({ status })
+      .eq('id', id);
+    if (error) {
+      console.error('Error updating status:', error);
+      window.alert('No se pudo actualizar el estatus. Intenta de nuevo.');
+      return;
+    }
+    setReports((rs) => rs.map((r) => r.id === id ? { ...r, status } : r));
   };
 
-  const removeReport = (id) => {
+  const removeReport = async (id) => {
     if (!window.confirm('¿Eliminar este reporte? Esta acción no se puede deshacer.')) return;
-    const all = loadReports().filter((r) => r.id !== id);
-    saveReports(all);
-    setReports(all);
-  };
-
-  const clearAll = () => {
-    if (!window.confirm('¿Eliminar TODOS los reportes guardados? Esta acción no se puede deshacer.')) return;
-    saveReports([]);
-    setReports([]);
+    const { error } = await sb
+      .from('inventory_reports')
+      .delete()
+      .eq('id', id);
+    if (error) {
+      console.error('Error deleting report:', error);
+      window.alert('No se pudo eliminar el reporte. Intenta de nuevo.');
+      return;
+    }
+    setReports((rs) => rs.filter((r) => r.id !== id));
   };
 
   const visible = useM3(() => {
@@ -588,7 +786,7 @@ function MasterDashboard({ profile, onLogout }) {
     const total = reports.length;
     const recibido = reports.filter((r) => r.status === 'Recibido').length;
     const proceso = reports.filter((r) => r.status === 'En proceso').length;
-    const completado = reports.filter((r) => r.status === 'Completado').length;
+    const completado = reports.filter((r) => r.status === 'Completado' || r.status === 'Surtido').length;
     const productos = reports.reduce((a, r) => a + r.items.reduce((b, i) => b + i.requested, 0), 0);
     return { total, recibido, proceso, completado, productos };
   }, [reports]);
@@ -601,7 +799,7 @@ function MasterDashboard({ profile, onLogout }) {
             <div>
               <div className="inv2-hero-eyebrow master">
                 <span className="dot" />
-                <span>Master Interno · Vista de administración</span>
+                <span>Master Interno · {profile.contact}</span>
               </div>
               <h1 className="inv2-hero-title light">
                 Reportes <em>de inventario</em>
@@ -642,18 +840,19 @@ function MasterDashboard({ profile, onLogout }) {
             </FilterGroup>
           </div>
           <div className="inv2-master-tools">
-            <button className="btn btn-ghost btn-sm" onClick={refresh}>
-              <Icon name="arrow" size={12} /> Actualizar
+            <button className="btn btn-ghost btn-sm" onClick={refresh} disabled={loading}>
+              <Icon name="arrow" size={12} /> {loading ? 'Cargando...' : 'Actualizar'}
             </button>
-            {reports.length > 0 &&
-              <button className="inv2-clear-btn" onClick={clearAll}>
-                Limpiar todos
-              </button>
-            }
           </div>
         </div>
 
-        {visible.length === 0 ?
+        {loading ?
+          <div className="inv2-empty">
+            <div className="inv2-empty-ico"><Icon name="inventory" size={28} /></div>
+            <h3>Cargando reportes...</h3>
+            <p>Obteniendo datos en tiempo real de la base de datos.</p>
+          </div> :
+        visible.length === 0 ?
           <div className="inv2-empty">
             <div className="inv2-empty-ico"><Icon name="inventory" size={28} /></div>
             <h3>Sin reportes {reports.length > 0 ? 'con esos filtros' : 'todavía'}</h3>
@@ -708,7 +907,8 @@ function StatusBadge({ status }) {
   const map = {
     'Recibido': 'amber',
     'En proceso': 'blue',
-    'Completado': 'green'
+    'Completado': 'green',
+    'Surtido': 'green'
   };
   return <span className={`inv2-status ${map[status] || ''}`}><span className="dot" />{status}</span>;
 }
@@ -716,6 +916,7 @@ function StatusBadge({ status }) {
 function ReportCard({ report, expanded, onExpand, onStatusChange, onRemove }) {
   const date = new Date(report.submittedAt);
   const totalReq = report.items.reduce((a, b) => a + b.requested, 0);
+  const idShort = String(report.id).slice(0, 8).toUpperCase();
   return (
     <div className={`inv2-report ${expanded ? 'open' : ''}`}>
       <button className="inv2-report-summary" onClick={onExpand}>
@@ -727,7 +928,6 @@ function ReportCard({ report, expanded, onExpand, onStatusChange, onRemove }) {
           <div className="name">{report.business}</div>
           <div className="meta">
             <span>{report.contact}</span>
-            {report.phone && <><span className="sep">·</span><span>{report.phone}</span></>}
           </div>
         </div>
         <div className="inv2-report-counts">
@@ -752,7 +952,6 @@ function ReportCard({ report, expanded, onExpand, onStatusChange, onRemove }) {
                 key={s}
                 className={`inv2-status-btn ${report.status === s ? 'active' : ''}`}
                 onClick={() => onStatusChange(s)}>
-
                   {s}
                 </button>
               )}
@@ -784,11 +983,9 @@ function ReportCard({ report, expanded, onExpand, onStatusChange, onRemove }) {
           </table>
 
           <div className="inv2-report-meta-grid">
-            <div><span>ID</span><strong className="mono">{report.id.toUpperCase()}</strong></div>
+            <div><span>ID</span><strong className="mono">{idShort}</strong></div>
             <div><span>Punto de venta</span><strong>{report.business}</strong></div>
             <div><span>Contacto</span><strong>{report.contact}</strong></div>
-            <div><span>Teléfono</span><strong>{report.phone || '—'}</strong></div>
-            <div><span>Ciudad</span><strong>{report.city || '—'}</strong></div>
             <div><span>Enviado</span><strong>{date.toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })}</strong></div>
           </div>
         </div>
@@ -798,7 +995,7 @@ function ReportCard({ report, expanded, onExpand, onStatusChange, onRemove }) {
 }
 
 /* ============================================================
-   CONTACT PAGE — unchanged from before
+   CONTACT PAGE — sin cambios
    ============================================================ */
 function ContactPage() {
   const [form, setForm] = useS3({ name: '', email: '', business: '', message: '' });
