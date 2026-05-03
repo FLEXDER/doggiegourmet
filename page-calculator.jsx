@@ -510,6 +510,213 @@ function LoadingState() {
 function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad, perros, especie, onSolicitar, onAsesor, onRestart, setRoute }) {
   const gramos = useCountUp(calc.gramosTotalDia, 1000);
   const bolsas = useCountUp(periodoData.bolsas, 1000);
+  const [pdfLoading, setPdfLoading] = uSC(false);
+
+  const handleDownloadPDF = async () => {
+    if (pdfLoading) return;
+    setPdfLoading(true);
+
+    try {
+      // Cargar jsPDF dinámicamente solo cuando se necesita (no afecta carga inicial)
+      if (!window.jspdf) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+          script.onload = resolve;
+          script.onerror = () => reject(new Error('No se pudo cargar la librería de PDF'));
+          document.head.appendChild(script);
+        });
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+
+      // Paleta corporativa (RGB)
+      const C = {
+        green: [115, 150, 60],
+        greenDark: [92, 122, 47],
+        brown: [74, 59, 16],
+        text: [40, 30, 15],
+        muted: [130, 120, 100],
+        cream: [248, 244, 232],
+        creamDark: [240, 234, 215]
+      };
+
+      const PW = 210, PH = 297, M = 20;
+      const CW = PW - M * 2;
+
+      // ===== HEADER (banda verde) =====
+      doc.setFillColor(...C.greenDark);
+      doc.rect(0, 0, PW, 26, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('DOGGIE GOURMET', M, 14);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text('ALIMENTO · ESTILO DE VIDA', M, 20);
+
+      const today = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+      doc.setFontSize(9);
+      doc.text(today, PW - M, 14, { align: 'right' });
+      doc.setFontSize(8);
+      doc.text('Plan personalizado', PW - M, 20, { align: 'right' });
+
+      let y = 42;
+
+      // ===== EYEBROW + TÍTULO =====
+      doc.setTextColor(...C.green);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('• PLAN PERSONALIZADO', M, y);
+
+      y += 9;
+      doc.setTextColor(...C.brown);
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Tu mascota necesita ${calc.gramosTotalDia} g al día`, M, y);
+
+      y += 7;
+      doc.setTextColor(...C.muted);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      const subtitle = `Plan basado en ${peso} kg, edad ${edad.toLowerCase()}, actividad ${actividad.toLowerCase()}${perros > 1 ? `, ${perros} mascotas` : ''}.`;
+      doc.text(subtitle, M, y);
+
+      y += 12;
+
+      // ===== DATOS DE LA MASCOTA =====
+      doc.setDrawColor(...C.green);
+      doc.setLineWidth(0.4);
+      doc.line(M, y, PW - M, y);
+      y += 7;
+
+      doc.setTextColor(...C.green);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('TU PLAN EN DETALLE', M, y);
+      y += 8;
+
+      const datos = [
+        ['MASCOTA', `${especie === 'gato' ? 'Gato' : 'Perro'} · ${raza}`],
+        ['PESO', `${peso} kg`],
+        ['EDAD', edad],
+        ['ACTIVIDAD', actividad],
+        ['CANTIDAD', `${perros} ${perros === 1 ? 'mascota' : 'mascotas'}`],
+        ['PERIODO', periodo === 'quincenal' ? 'Quincenal' : 'Mensual']
+      ];
+
+      const colW = CW / 3;
+      datos.forEach((d, i) => {
+        const col = i % 3;
+        const row = Math.floor(i / 3);
+        const x = M + col * colW;
+        const yy = y + row * 13;
+        doc.setTextColor(...C.muted);
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'bold');
+        doc.text(d[0], x, yy);
+        doc.setTextColor(...C.brown);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(d[1], x, yy + 5);
+      });
+      y += 30;
+
+      // ===== RECOMENDACIÓN (caja cream) =====
+      doc.setFillColor(...C.cream);
+      doc.setDrawColor(...C.green);
+      doc.setLineWidth(0.4);
+      doc.roundedRect(M, y, CW, 32, 3, 3, 'FD');
+
+      doc.setTextColor(...C.green);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`RECOMENDACIÓN · ${calc.product.tag.toUpperCase()}`, M + 6, y + 8);
+
+      doc.setTextColor(...C.brown);
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text(calc.product.name, M + 6, y + 18);
+
+      doc.setTextColor(...C.muted);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Presentación: ${calc.product.size} · Porción diaria: ${calc.gramosTotalDia} g (${calc.bagsDia.toFixed(2)} bolsas/día)`, M + 6, y + 26);
+
+      y += 38;
+
+      // ===== COMPRA SUGERIDA (caja verde) =====
+      doc.setFillColor(...C.green);
+      doc.roundedRect(M, y, CW, 24, 3, 3, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text('COMPRA SUGERIDA', M + 6, y + 8);
+
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${periodoData.bolsas} bolsas`, M + 6, y + 18);
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${periodo === 'quincenal' ? 'Cada 15 días' : 'Cada 30 días'} · ${calc.product.size} cada una`, PW - M - 6, y + 18, { align: 'right' });
+
+      y += 30;
+
+      // ===== ENTREGA =====
+      doc.setTextColor(...C.green);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('ENTREGA', M, y);
+      y += 5;
+
+      doc.setTextColor(...C.brown);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Domicilio gratis · Cadena fría a -18 °C · 24-48 horas', M, y);
+      y += 10;
+
+      // ===== DISCLAIMER =====
+      doc.setFillColor(...C.creamDark);
+      doc.roundedRect(M, y, CW, 24, 2, 2, 'F');
+
+      doc.setTextColor(...C.green);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text('NOTA IMPORTANTE', M + 5, y + 6);
+
+      doc.setTextColor(...C.brown);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      const disclaimer = 'Las recomendaciones son estimadas con base en peso, edad y actividad. Para mascotas con condiciones especiales (sobrepeso, gestación, enfermedades, alergias), consulta a tu veterinario antes de iniciar la dieta BARF.';
+      const splitDisc = doc.splitTextToSize(disclaimer, CW - 10);
+      doc.text(splitDisc, M + 5, y + 11);
+
+      // ===== FOOTER (banda verde) =====
+      doc.setFillColor(...C.greenDark);
+      doc.rect(0, PH - 20, PW, 20, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('¿Listo para tu pedido?', M, PH - 12);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text('WhatsApp: 33 1844 0265 · doggiegourmet.com.mx', M, PH - 6);
+
+      doc.setFontSize(8);
+      doc.text('Plan generado por Doggie Gourmet', PW - M, PH - 8, { align: 'right' });
+
+      // Guardar
+      const fileName = `dieta-doggie-gourmet-${new Date().toISOString().slice(0, 10)}.pdf`;
+      doc.save(fileName);
+    } catch (err) {
+      console.error('Error al generar PDF:', err);
+      alert('No se pudo generar el PDF. Intenta de nuevo en un momento.');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   return (
     <div className="calc2-result">
@@ -586,6 +793,47 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
           Hablar con un asesor
         </a>
       </div>
+
+      <button
+        onClick={handleDownloadPDF}
+        disabled={pdfLoading}
+        style={{
+          marginTop: 12,
+          width: '100%',
+          padding: '14px 20px',
+          borderRadius: 999,
+          background: 'transparent',
+          border: '1.5px solid var(--green, #73963C)',
+          color: 'var(--green, #73963C)',
+          fontSize: 15,
+          fontWeight: 600,
+          fontFamily: 'inherit',
+          cursor: pdfLoading ? 'wait' : 'pointer',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          opacity: pdfLoading ? 0.6 : 1,
+          transition: 'all 0.2s ease'
+        }}
+        onMouseEnter={(e) => {
+          if (!pdfLoading) {
+            e.currentTarget.style.background = 'var(--green, #73963C)';
+            e.currentTarget.style.color = '#fff';
+          }
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'transparent';
+          e.currentTarget.style.color = 'var(--green, #73963C)';
+        }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        {pdfLoading ? 'Generando PDF...' : 'Descargar dieta en PDF'}
+      </button>
 
       <button className="calc2-restart" onClick={onRestart}>
         ← Recalcular con otros datos
