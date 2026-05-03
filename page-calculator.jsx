@@ -539,73 +539,81 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
         await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
       }
 
-      // Esperar a que las webfonts estén listas (Bricolage + Instrument Serif)
+      // Esperar a que las webfonts estén realmente listas
       if (document.fonts && document.fonts.ready) {
         await document.fonts.ready;
       }
+      // Buffer extra para asegurar que el render terminó
+      await new Promise(r => setTimeout(r, 300));
 
       const element = resultRef.current;
 
-      // Ocultar elementos marcados con data-pdf-hide (botones, etc.)
+      // Ocultar botones marcados con data-pdf-hide
       hiddenElements = Array.from(element.querySelectorAll('[data-pdf-hide="true"]'))
         .map(el => ({ el, prevDisplay: el.style.display }));
       hiddenElements.forEach(({ el }) => { el.style.display = 'none'; });
 
+      // Resolver CSS variables corporativas (a veces html2canvas las pierde)
+      const cssRoot = getComputedStyle(document.documentElement);
+      const paperColor = cssRoot.getPropertyValue('--paper').trim() || '#F8F4E8';
+
       // Frame para asegurar que el DOM se actualizó antes de capturar
       await new Promise(r => requestAnimationFrame(r));
 
-      // Capturar el div del resultado a alta resolución
+      // Capturar a alta resolución (scale 3 ~ calidad print)
       const canvas = await window.html2canvas(element, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         allowTaint: false,
         logging: false,
-        backgroundColor: '#F8F4E8',
-        windowWidth: element.scrollWidth
+        backgroundColor: paperColor,
+        windowWidth: document.documentElement.offsetWidth
       });
 
       // Restaurar elementos ocultos
       hiddenElements.forEach(({ el, prevDisplay }) => { el.style.display = prevDisplay; });
       hiddenElements = [];
 
-      // Construir el PDF A4
+      // ============================================================
+      // GENERAR PDF: SIEMPRE una sola página A4, contenido escalado
+      // proporcionalmente para caber sin partirse.
+      // ============================================================
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
+      const doc = new jsPDF({
+        unit: 'mm',
+        format: 'a4',
+        compress: true,
+        orientation: 'portrait'
+      });
 
-      const pdfWidth = 210;
-      const pdfHeight = 297;
-      const margin = 6; // pequeño margen blanco alrededor
-      const usableWidth = pdfWidth - margin * 2;
+      const pdfWidth = doc.internal.pageSize.getWidth();   // 210mm
+      const pdfHeight = doc.internal.pageSize.getHeight(); // 297mm
+      const margin = 6;
+      const maxW = pdfWidth - margin * 2;
+      const maxH = pdfHeight - margin * 2;
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.92);
-      // Calcular alto manteniendo proporción
-      const imgWidth = usableWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      // Fit-to-page proporcional
+      const canvasAspect = canvas.width / canvas.height;
+      let renderW = maxW;
+      let renderH = maxW / canvasAspect;
 
-      if (imgHeight <= pdfHeight - margin * 2) {
-        // Cabe en una sola página
-        doc.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
-      } else {
-        // Multi-página: dividir la imagen en páginas A4
-        let heightLeft = imgHeight;
-        let position = margin;
-
-        doc.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
-        heightLeft -= (pdfHeight - margin * 2);
-
-        while (heightLeft > 0) {
-          position = margin - (imgHeight - heightLeft);
-          doc.addPage();
-          doc.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
-          heightLeft -= (pdfHeight - margin * 2);
-        }
+      if (renderH > maxH) {
+        renderH = maxH;
+        renderW = maxH * canvasAspect;
       }
+
+      // Centrar horizontalmente, alinear arriba verticalmente
+      const xOffset = (pdfWidth - renderW) / 2;
+      const yOffset = margin;
+
+      // PNG = sin pérdida = texto perfectamente nítido
+      const imgData = canvas.toDataURL('image/png');
+      doc.addImage(imgData, 'PNG', xOffset, yOffset, renderW, renderH);
 
       const fileName = `dieta-doggie-gourmet-${new Date().toISOString().slice(0, 10)}.pdf`;
       doc.save(fileName);
     } catch (err) {
       console.error('Error al generar PDF:', err);
-      // Restaurar elementos ocultos si quedaron así por error
       hiddenElements.forEach(({ el, prevDisplay }) => { el.style.display = prevDisplay; });
       alert('No se pudo generar el PDF. Intenta de nuevo en un momento.');
     } finally {
