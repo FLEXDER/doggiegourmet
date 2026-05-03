@@ -14,7 +14,8 @@ const { useState: useSC, useEffect: useEC, useMemo: useMC } = React;
 const CART_STORAGE_KEY = 'dg_cart_v1';
 const CART_MIN_TOTAL = 500;
 const CART_WHATSAPP = '523318440265';
-const CART_WEB3FORMS_KEY = '242b11d0-38a4-48f3-b031-fa3730aac48d';
+// La WEB3FORMS_KEY se movió al servidor (Edge Function de Supabase) por seguridad.
+// El frontend solo invoca la función submit-order, no maneja la key directamente.
 
 /* ============================================================
    STORE: funciones globales del carrito
@@ -308,44 +309,47 @@ function CartDrawer({ open, onClose }) {
     return lines.join('\n');
   };
 
-  const sendNotificationEmail = async () => {
+  const submitOrderToBackend = async () => {
     try {
-      const productosTxt = items.map((it, i) =>
-        `${String(i + 1).padStart(2, '0')}. ${it.name} (${it.size}) — ${it.quantity} uds. — $${(it.price * it.quantity).toLocaleString('es-MX')}`
-      ).join('\n');
+      // Llamar a la Edge Function (la key Web3Forms está escondida ahí)
+      // Si window.supabase no existe, fallamos silenciosamente — no bloqueamos al usuario
+      if (!window.supabase) {
+        console.warn('Supabase client no disponible — pedido no guardado en BD');
+        return null;
+      }
 
-      const message =
-        `NUEVO PEDIDO — DOGGIE GOURMET\n` +
-        `${'─'.repeat(40)}\n\n` +
-        `Fecha: ${new Date().toLocaleString('es-MX', { dateStyle: 'long', timeStyle: 'short' })}\n` +
-        `Total: $${total.toLocaleString('es-MX')} MXN\n` +
-        `Productos: ${count} unidades en ${items.length} líneas\n\n` +
-        `DETALLE\n${'─'.repeat(40)}\n${productosTxt}\n\n` +
-        `El cliente fue redirigido a WhatsApp para confirmar el pedido.`;
+      const payload = {
+        items: items.map((it) => ({
+          id: it.id,
+          name: it.name,
+          size: it.size,
+          img: it.img,
+          price: it.price,
+          quantity: it.quantity
+        }))
+      };
 
-      await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          access_key: CART_WEB3FORMS_KEY,
-          subject: `Nuevo pedido en línea · $${total.toLocaleString('es-MX')} MXN`,
-          from_name: 'Doggie Gourmet · Tienda en línea',
-          message,
-          total: total,
-          unidades: count,
-          lineas: items.length
-        })
+      const { data, error } = await window.supabase.functions.invoke('submit-order', {
+        body: payload
       });
+
+      if (error) {
+        console.warn('Edge Function error (no bloqueante):', error);
+        return null;
+      }
+      return data;
     } catch (err) {
-      console.warn('Email notification failed (no bloqueante):', err);
+      console.warn('Submit order failed (no bloqueante):', err);
+      return null;
     }
   };
 
   const proceedToCheckout = async () => {
     if (!meetsMinimum || sending) return;
     setSending(true);
-    // 1) Mandar correo (no bloqueante)
-    sendNotificationEmail();
+    // 1) Submit al backend (guarda en BD + manda correo desde el server)
+    //    No await — no bloqueamos al usuario, que pueda abrir WhatsApp en paralelo
+    submitOrderToBackend();
     // 2) Abrir WhatsApp
     const text = encodeURIComponent(buildOrderText());
     window.open(`https://wa.me/${CART_WHATSAPP}?text=${text}`, '_blank');
