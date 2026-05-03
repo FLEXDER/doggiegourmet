@@ -12,7 +12,7 @@ const sb = window.supabaseClient;
 const WEB3FORMS_KEY = '242b11d0-38a4-48f3-b031-fa3730aac48d';
 const WEB3FORMS_ENDPOINT = 'https://api.web3forms.com/submit';
 
-/* Sugerencias de productos para el autocomplete */
+/* Default product list — used as suggestions when adding rows */
 const PRODUCT_SUGGESTIONS = [
   'BARF Original 500g',
   'BARF Original Perros Chicos 250g',
@@ -30,6 +30,8 @@ const PRODUCT_SUGGESTIONS = [
   'Perfume Pawer Bomb 100ml',
   'Perfume La Vie Est Woof 100ml'
 ];
+
+/* ------------ Helpers ------------ */
 
 /* ============================================================
    ROOT — máquina de estados de autenticación
@@ -55,7 +57,15 @@ function InventoryPage() {
   }, []);
 
   if (masterSession === undefined) {
-    return <LoadingScreen />;
+    return (
+      <div className="pin-gate-page">
+        <div className="pin-gate-shell" style={{ alignItems: 'center', justifyContent: 'center' }}>
+          <div className="pin-gate-card" style={{ textAlign: 'center', padding: 60, minWidth: 280 }}>
+            <p style={{ color: 'var(--brown-soft)', fontSize: 14 }}>Cargando...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
   if (masterSession) {
     return <MasterDashboard
@@ -71,21 +81,6 @@ function InventoryPage() {
   return <PinGate
     onUnlock={setPosProfile}
     onMasterClick={() => setShowMasterLogin(true)} />;
-}
-
-/* ============================================================
-   LOADING SCREEN
-   ============================================================ */
-function LoadingScreen() {
-  return (
-    <div className="pin-gate-page">
-      <div className="pin-gate-shell" style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <div className="pin-gate-card" style={{ textAlign: 'center', padding: 60, minWidth: 280 }}>
-          <p style={{ color: 'var(--brown-soft)', fontSize: 14 }}>Cargando...</p>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 /* ============================================================
@@ -229,8 +224,8 @@ function PinGate({ onUnlock, onMasterClick }) {
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 /* ============================================================
@@ -346,12 +341,12 @@ function MasterLogin({ onCancel }) {
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 /* ============================================================
-   POS REPORT FORM — formulario para puntos de venta
+   POS REPORT FORM
    ============================================================ */
 function PosReportForm({ profile, onLogout }) {
   const [rows, setRows] = useS3([
@@ -492,114 +487,107 @@ function PosReportForm({ profile, onLogout }) {
       <PosHeader profile={profile} onLogout={onLogout} />
 
       <div className="container">
-        <div className="inv2-form">
-          <h2 className="inv2-section-title">
-            Reporte de <em>inventario</em>
-          </h2>
-          <p className="inv2-section-sub">
-            Captura los productos y la cantidad que solicitas. Lo recibimos en tiempo real.
-          </p>
-
-          {/* DATOS DEL NEGOCIO */}
-          <div className="inv2-section">
-            <div className="inv2-section-head">
-              <div className="inv2-section-num">01</div>
-              <div className="inv2-section-info">
-                <h3>Datos del negocio</h3>
-                <p>Información prellenada según tu perfil. <em>Solo lectura.</em></p>
+        <div className="inv2-grid">
+          {/* LOCKED BUSINESS INFO */}
+          <section className="inv2-card inv2-biz-card">
+            <header className="inv2-card-head">
+              <div className="inv2-card-head-l">
+                <span className="inv2-card-num">01</span>
+                <div>
+                  <h3>Datos del negocio</h3>
+                  <p>Información prellenada según tu perfil. <em>Solo lectura.</em></p>
+                </div>
               </div>
               <div className="inv2-locked-badge">
-                <Icon name="lock" size={11} /> Bloqueado
+                <Icon name="lock" size={11} />
+                <span>Bloqueado</span>
+              </div>
+            </header>
+            <div className="inv2-card-body">
+              <div className="inv2-biz-grid">
+                <BizField label="Nombre del negocio" value={profile.business} />
+                <BizField label="Persona de contacto" value={profile.contact} />
+                <BizField label="Teléfono" value={profile.phone || '—'} />
+                <BizField label="Ciudad / Ubicación" value={profile.city || '—'} full />
               </div>
             </div>
-            <div className="inv2-bizgrid">
-              <div className="inv2-bizfield">
-                <span className="lbl">Nombre del negocio</span>
-                <span className="val">{profile.business}</span>
-              </div>
-              <div className="inv2-bizfield">
-                <span className="lbl">Persona de contacto</span>
-                <span className="val">{profile.contact}</span>
-              </div>
-              <div className="inv2-bizfield">
-                <span className="lbl">Teléfono</span>
-                <span className="val">{profile.phone || '—'}</span>
-              </div>
-              <div className="inv2-bizfield">
-                <span className="lbl">Ciudad / ubicación</span>
-                <span className="val">{profile.city || '—'}</span>
-              </div>
-            </div>
-          </div>
+          </section>
 
-          {/* PRODUCTOS */}
-          <div className="inv2-section">
-            <div className="inv2-section-head">
-              <div className="inv2-section-num">02</div>
-              <div className="inv2-section-info">
-                <h3>Productos e inventario</h3>
-                <p>Agrega los productos que necesitas reportar y solicitar.</p>
-              </div>
-              <div className="inv2-pcount">
-                <strong>{validRows.length}</strong> <span>productos</span>
-              </div>
-            </div>
-
-            <div className="inv2-rows-head">
-              <div className="col-num">#</div>
-              <div className="col-prod">Producto</div>
-              <div className="col-qty">Cantidad solicitada</div>
-              <div className="col-notes">Notas</div>
-              <div className="col-x"></div>
-            </div>
-
-            <datalist id="dg-products">
-              {PRODUCT_SUGGESTIONS.map((p) => <option key={p} value={p} />)}
-            </datalist>
-
-            {rows.map((row, i) =>
-              <div className="inv2-row" key={row.id}>
-                <div className="col-num">{String(i + 1).padStart(2, '0')}</div>
-                <div className="col-prod">
-                  <input
-                    list="dg-products"
-                    className="inv2-input"
-                    placeholder="Nombre del producto"
-                    value={row.product}
-                    onChange={(e) => updateRow(row.id, 'product', e.target.value)} />
+          {/* PRODUCT ROWS */}
+          <section className="inv2-card">
+            <header className="inv2-card-head">
+              <div className="inv2-card-head-l">
+                <span className="inv2-card-num">02</span>
+                <div>
+                  <h3>Productos e inventario</h3>
+                  <p>Agrega los productos que necesitas reportar y solicitar.</p>
                 </div>
-                <div className="col-qty">
-                  <input
-                    type="number"
-                    min="0"
-                    inputMode="numeric"
-                    className="inv2-input num"
-                    placeholder="0"
-                    value={row.requested}
-                    onChange={(e) => updateRow(row.id, 'requested', e.target.value)} />
+              </div>
+              <div className="inv2-row-count">
+                <strong>{validRows.length}</strong>
+                <span>{validRows.length === 1 ? 'producto' : 'productos'}</span>
+              </div>
+            </header>
+
+            <div className="inv2-card-body">
+              <datalist id="dg-product-suggestions">
+                {PRODUCT_SUGGESTIONS.map((p) => <option key={p} value={p} />)}
+              </datalist>
+
+              <div className="inv2-rows">
+                <div className="inv2-rows-head">
+                  <span></span>
+                  <span>Producto</span>
+                  <span>Cantidad solicitada</span>
+                  <span>Notas</span>
+                  <span></span>
                 </div>
-                <div className="col-notes">
-                  <input
-                    className="inv2-input"
-                    placeholder="Caducidad, lote, comentario..."
-                    value={row.notes}
-                    onChange={(e) => updateRow(row.id, 'notes', e.target.value)} />
-                </div>
-                <div className="col-x">
-                  <button
-                    className="inv2-row-x"
+
+                {rows.map((row, idx) =>
+                <div className="inv2-prow" key={row.id}>
+                    <div className="inv2-prow-num">{String(idx + 1).padStart(2, '0')}</div>
+                    <div className="inv2-prow-cell inv2-prow-product">
+                      <input
+                      list="dg-product-suggestions"
+                      className="inv2-input"
+                      placeholder="Nombre del producto"
+                      value={row.product}
+                      onChange={(e) => updateRow(row.id, 'product', e.target.value)} />
+                    </div>
+                    <div className="inv2-prow-cell" data-lbl="Cantidad solicitada">
+                      <input
+                      type="number"
+                      min="0"
+                      className="inv2-input inv2-input-num"
+                      placeholder="0"
+                      value={row.requested}
+                      onChange={(e) => updateRow(row.id, 'requested', e.target.value)} />
+                    </div>
+                    <div className="inv2-prow-cell" data-lbl="Notas">
+                      <input
+                      className="inv2-input"
+                      placeholder="Caducidad, lote, comentario…"
+                      value={row.notes}
+                      onChange={(e) => updateRow(row.id, 'notes', e.target.value)} />
+                    </div>
+                    <button
+                    className="inv2-prow-remove"
                     onClick={() => removeRow(row.id)}
-                    disabled={rows.length === 1}>
-                    <Icon name="x" size={12} />
-                  </button>
-                </div>
-              </div>
-            )}
+                    disabled={rows.length === 1}
+                    aria-label="Eliminar fila"
+                    title={rows.length === 1 ? 'Mínimo una fila' : 'Eliminar producto'}>
 
-            <button className="inv2-add-row" onClick={addRow}>
-              <span className="plus"><Icon name="plus" size={11} /></span> Agregar producto
-            </button>
-          </div>
+                      <Icon name="x" size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <button className="inv2-add-btn" onClick={addRow}>
+                <span className="plus">+</span> Agregar producto
+              </button>
+            </div>
+          </section>
 
           {/* SUBMIT */}
           <div className="inv2-submit-bar">
@@ -618,6 +606,15 @@ function PosReportForm({ profile, onLogout }) {
 
 }
 
+function BizField({ label, value, full }) {
+  return (
+    <div className={`inv2-biz-field ${full ? 'full' : ''}`}>
+      <div className="inv2-biz-label">{label}</div>
+      <div className="inv2-biz-value">{value}</div>
+    </div>);
+
+}
+
 function PosHeader({ profile, onLogout }) {
   return (
     <div className="inv2-hero">
@@ -626,13 +623,13 @@ function PosHeader({ profile, onLogout }) {
           <div>
             <div className="inv2-hero-eyebrow">
               <span className="dot" />
-              <span>{profile.business}</span>
+              <span>Sesión activa · {profile.business}</span>
             </div>
             <h1 className="inv2-hero-title">
-              Hola, <em>{profile.contact ? profile.contact.split(' ')[0] : 'punto de venta'}</em>.
+              Reporte de <em>inventario</em>
             </h1>
             <p className="inv2-hero-sub">
-              Reporta tu inventario actual. Te respondemos en cuanto lo recibamos.
+              Captura los productos y la cantidad que solicitas. Lo recibimos en tiempo real.
             </p>
           </div>
           <button className="inv2-logout" onClick={onLogout}>
@@ -645,25 +642,40 @@ function PosHeader({ profile, onLogout }) {
 }
 
 function PosSuccessView({ report, onNew, onLogout }) {
-  const totalReq = report.items.reduce((a, b) => a + b.requested, 0);
-  const date = new Date(report.submittedAt);
-  const idShort = String(report.id).slice(0, 8).toUpperCase();
+  const totalRequested = report.items.reduce((a, b) => a + b.requested, 0);
   return (
     <div className="inv2-page">
-      <PosHeader profile={{ business: report.business, contact: report.contact }} onLogout={onLogout} />
+      <PosHeader profile={{ business: report.business }} onLogout={onLogout} />
       <div className="container">
         <div className="inv2-success">
-          <div className="inv2-success-card">
-            <div className="modal-check"><Icon name="check" size={28} /></div>
-            <h2>Reporte recibido. <em>¡Gracias!</em></h2>
-            <p>Tu reporte fue guardado correctamente. El equipo de Doggie Gourmet ya lo está procesando.</p>
+          <div className="inv2-success-check">
+            <Icon name="check" size={32} />
+          </div>
+          <h2 className="inv2-success-title">
+            Reporte enviado <em>correctamente.</em>
+          </h2>
+          <p className="inv2-success-sub">
+            Recibimos tu inventario, {report.contact.split(' ')[0] || 'amig@'}. Lo procesaremos en las próximas horas y te confirmaremos el envío.
+          </p>
 
-            <div className="inv2-success-meta">
-              <div><span>Folio</span><strong>{idShort}</strong></div>
-              <div><span>Fecha</span><strong>{date.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}</strong></div>
-              <div><span>Hora</span><strong>{date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</strong></div>
-              <div><span>Productos</span><strong>{report.items.length}</strong></div>
-              <div><span>Unidades</span><strong>{totalReq}</strong></div>
+          <div className="inv2-success-card">
+            <div className="inv2-success-card-head">
+              <div>
+                <div className="lbl">Reporte</div>
+                <div className="val mono">{report.id.toUpperCase()}</div>
+              </div>
+              <div>
+                <div className="lbl">Fecha y hora</div>
+                <div className="val">{new Date(report.submittedAt).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })}</div>
+              </div>
+              <div>
+                <div className="lbl">Punto de venta</div>
+                <div className="val">{report.business}</div>
+              </div>
+              <div>
+                <div className="lbl">Productos</div>
+                <div className="val">{report.items.length} · {totalRequested} unidades solicitadas</div>
+              </div>
             </div>
 
             <div className="inv2-success-list">
@@ -694,7 +706,7 @@ function PosSuccessView({ report, onNew, onLogout }) {
    ============================================================ */
 function MasterDashboard({ session, onLogout }) {
   const [reports, setReports] = useS3([]);
-  const [loading, setLoading] = useS3(true);
+  const [loadingReports, setLoadingReports] = useS3(true);
   const [filter, setFilter] = useS3('all');
   const [statusFilter, setStatusFilter] = useS3('all');
   const [expanded, setExpanded] = useS3(null);
@@ -707,8 +719,8 @@ function MasterDashboard({ session, onLogout }) {
     contact: (session && session.user && session.user.email) || 'Doggie Gourmet'
   };
 
-  const loadReports = async () => {
-    setLoading(true);
+  const refresh = async () => {
+    setLoadingReports(true);
     const { data, error } = await sb
       .from('inventory_reports')
       .select(`
@@ -738,14 +750,10 @@ function MasterDashboard({ session, onLogout }) {
       }));
       setReports(transformed);
     }
-    setLoading(false);
+    setLoadingReports(false);
   };
 
-  useE3(() => {
-    loadReports();
-  }, []);
-
-  const refresh = () => loadReports();
+  useE3(() => { refresh(); }, []);
 
   const updateStatus = async (id, status) => {
     const { error } = await sb
@@ -840,13 +848,13 @@ function MasterDashboard({ session, onLogout }) {
             </FilterGroup>
           </div>
           <div className="inv2-master-tools">
-            <button className="btn btn-ghost btn-sm" onClick={refresh} disabled={loading}>
-              <Icon name="arrow" size={12} /> {loading ? 'Cargando...' : 'Actualizar'}
+            <button className="btn btn-ghost btn-sm" onClick={refresh} disabled={loadingReports}>
+              <Icon name="arrow" size={12} /> {loadingReports ? 'Cargando...' : 'Actualizar'}
             </button>
           </div>
         </div>
 
-        {loading ?
+        {loadingReports ?
           <div className="inv2-empty">
             <div className="inv2-empty-ico"><Icon name="inventory" size={28} /></div>
             <h3>Cargando reportes...</h3>
@@ -907,8 +915,7 @@ function StatusBadge({ status }) {
   const map = {
     'Recibido': 'amber',
     'En proceso': 'blue',
-    'Completado': 'green',
-    'Surtido': 'green'
+    'Completado': 'green'
   };
   return <span className={`inv2-status ${map[status] || ''}`}><span className="dot" />{status}</span>;
 }
@@ -916,7 +923,6 @@ function StatusBadge({ status }) {
 function ReportCard({ report, expanded, onExpand, onStatusChange, onRemove }) {
   const date = new Date(report.submittedAt);
   const totalReq = report.items.reduce((a, b) => a + b.requested, 0);
-  const idShort = String(report.id).slice(0, 8).toUpperCase();
   return (
     <div className={`inv2-report ${expanded ? 'open' : ''}`}>
       <button className="inv2-report-summary" onClick={onExpand}>
@@ -928,6 +934,7 @@ function ReportCard({ report, expanded, onExpand, onStatusChange, onRemove }) {
           <div className="name">{report.business}</div>
           <div className="meta">
             <span>{report.contact}</span>
+            {report.phone && <><span className="sep">·</span><span>{report.phone}</span></>}
           </div>
         </div>
         <div className="inv2-report-counts">
@@ -952,6 +959,7 @@ function ReportCard({ report, expanded, onExpand, onStatusChange, onRemove }) {
                 key={s}
                 className={`inv2-status-btn ${report.status === s ? 'active' : ''}`}
                 onClick={() => onStatusChange(s)}>
+
                   {s}
                 </button>
               )}
@@ -983,9 +991,11 @@ function ReportCard({ report, expanded, onExpand, onStatusChange, onRemove }) {
           </table>
 
           <div className="inv2-report-meta-grid">
-            <div><span>ID</span><strong className="mono">{idShort}</strong></div>
+            <div><span>ID</span><strong className="mono">{report.id.toUpperCase()}</strong></div>
             <div><span>Punto de venta</span><strong>{report.business}</strong></div>
             <div><span>Contacto</span><strong>{report.contact}</strong></div>
+            <div><span>Teléfono</span><strong>{report.phone || '—'}</strong></div>
+            <div><span>Ciudad</span><strong>{report.city || '—'}</strong></div>
             <div><span>Enviado</span><strong>{date.toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })}</strong></div>
           </div>
         </div>
@@ -995,7 +1005,7 @@ function ReportCard({ report, expanded, onExpand, onStatusChange, onRemove }) {
 }
 
 /* ============================================================
-   CONTACT PAGE — sin cambios
+   CONTACT PAGE — unchanged from before
    ============================================================ */
 function ContactPage() {
   const [form, setForm] = useS3({ name: '', email: '', business: '', message: '' });
