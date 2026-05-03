@@ -225,7 +225,7 @@ function CalculatorPage({ setRoute }) {
     const presentacionLabel = `${calc.product.size} por bolsa`;
 
     const message =
-`Hola Doggie Gourmet, quiero solicitar mi pedido:
+`¡Hola Doggie Gourmet! Calculé la dieta personalizada para mi mascota, quisiera confirmar si es correcta
 
 Mascota: ${especieLabel}
 Raza: ${raza}
