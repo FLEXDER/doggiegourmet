@@ -523,137 +523,339 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
     document.head.appendChild(script);
   });
 
+  // Helper: cargar imagen como base64 (necesario para meterla en jsPDF)
+  const loadImageAsDataURL = (src) => new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        resolve({
+          dataUrl: canvas.toDataURL('image/jpeg', 0.85),
+          width: img.naturalWidth,
+          height: img.naturalHeight
+        });
+      } catch (e) {
+        reject(e);
+      }
+    };
+    img.onerror = () => reject(new Error('No se pudo cargar la imagen'));
+    img.src = src;
+  });
+
   const handleDownloadPDF = async () => {
     if (pdfLoading || !resultRef.current) return;
     setPdfLoading(true);
 
-    // Snapshot de elementos a ocultar (para restaurar si algo falla)
-    let hiddenElements = [];
-
     try {
-      // Cargar libs lazy desde CDN
-      if (!window.html2canvas) {
-        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
-      }
+      // Solo necesitamos jsPDF (sin html2canvas — vamos programático)
       if (!window.jspdf) {
         await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
       }
 
-      // Esperar a que las webfonts estén realmente listas
-      if (document.fonts && document.fonts.ready) {
-        await document.fonts.ready;
+      // Intentar cargar la imagen del producto en paralelo
+      // Si falla (ej. CORS), seguimos sin imagen, no rompemos el PDF
+      let productImage = null;
+      try {
+        productImage = await loadImageAsDataURL(calc.product.img);
+      } catch (e) {
+        console.warn('No se pudo cargar imagen del producto, generando PDF sin ella:', e);
       }
-      // Buffer extra para asegurar que el render terminó
-      await new Promise(r => setTimeout(r, 300));
 
-      const element = resultRef.current;
-
-      // Ocultar botones marcados con data-pdf-hide
-      hiddenElements = Array.from(element.querySelectorAll('[data-pdf-hide="true"]'))
-        .map(el => ({ el, prevDisplay: el.style.display }));
-      hiddenElements.forEach(({ el }) => { el.style.display = 'none'; });
-
-      // Resolver CSS variables corporativas (a veces html2canvas las pierde)
-      const cssRoot = getComputedStyle(document.documentElement);
-      const paperColor = cssRoot.getPropertyValue('--paper').trim() || '#F8F4E8';
-
-      // Frame para asegurar que el DOM se actualizó antes de capturar
-      await new Promise(r => requestAnimationFrame(r));
-
-      // Capturar a alta resolución (scale 3 ~ calidad print)
-      const canvas = await window.html2canvas(element, {
-        scale: 3,
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        backgroundColor: paperColor,
-        windowWidth: document.documentElement.offsetWidth,
-        // CRITICAL FIX: html2canvas no resuelve CSS variables (var(--brown), etc).
-        // El callback onclone nos da acceso al DOM clonado antes de renderizarlo.
-        // Caminamos el árbol original (donde las variables YA están resueltas por
-        // el navegador en getComputedStyle) y copiamos los colores como inline
-        // styles al clon. Así html2canvas ve colores literales y no variables.
-        onclone: (clonedDoc, clonedElement) => {
-          const propsToCopy = [
-            'color',
-            'backgroundColor',
-            'borderTopColor',
-            'borderRightColor',
-            'borderBottomColor',
-            'borderLeftColor',
-            'fill',
-            'stroke',
-            'fontFamily',
-            'fontWeight'
-          ];
-
-          const walk = (origNode, cloneNode) => {
-            if (!origNode || !cloneNode) return;
-            if (origNode.nodeType === 1 && cloneNode.nodeType === 1) {
-              const cs = window.getComputedStyle(origNode);
-              propsToCopy.forEach(prop => {
-                const val = cs[prop];
-                if (val && val !== 'none' && val !== 'normal') {
-                  cloneNode.style[prop] = val;
-                }
-              });
-            }
-            const origChildren = Array.from(origNode.childNodes || []);
-            const cloneChildren = Array.from(cloneNode.childNodes || []);
-            origChildren.forEach((oc, i) => {
-              if (cloneChildren[i]) walk(oc, cloneChildren[i]);
-            });
-          };
-
-          walk(element, clonedElement);
-        }
-      });
-
-      // Restaurar elementos ocultos
-      hiddenElements.forEach(({ el, prevDisplay }) => { el.style.display = prevDisplay; });
-      hiddenElements = [];
-
-      // ============================================================
-      // GENERAR PDF: SIEMPRE una sola página A4, contenido escalado
-      // proporcionalmente para caber sin partirse.
-      // ============================================================
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({
-        unit: 'mm',
-        format: 'a4',
-        compress: true,
-        orientation: 'portrait'
+      const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
+
+      // Paleta corporativa
+      const C = {
+        green: [115, 150, 60],         // --green
+        greenDark: [92, 122, 47],      // --green-dark
+        greenSoft: [218, 232, 195],    // verde muy claro
+        brown: [74, 59, 16],           // --brown
+        brownLight: [120, 100, 50],    // marrón medio
+        muted: [140, 130, 110],
+        cream: [248, 244, 232],        // --paper
+        creamCard: [242, 233, 189],    // --cream
+        white: [255, 255, 255]
+      };
+
+      const PW = 210, PH = 297;
+      const M = 15;
+      const CW = PW - M * 2;
+
+      // ============================================================
+      // HEADER (banda verde superior)
+      // ============================================================
+      doc.setFillColor(...C.greenDark);
+      doc.rect(0, 0, PW, 22, 'F');
+
+      doc.setTextColor(...C.white);
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('DOGGIE GOURMET', M, 12);
+
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      doc.text('ALIMENTO · ESTILO DE VIDA', M, 17);
+
+      const today = new Date().toLocaleDateString('es-MX', {
+        day: 'numeric', month: 'long', year: 'numeric'
       });
+      doc.setFontSize(8);
+      doc.text(today, PW - M, 12, { align: 'right' });
+      doc.text('Plan personalizado', PW - M, 17, { align: 'right' });
 
-      const pdfWidth = doc.internal.pageSize.getWidth();   // 210mm
-      const pdfHeight = doc.internal.pageSize.getHeight(); // 297mm
-      const margin = 6;
-      const maxW = pdfWidth - margin * 2;
-      const maxH = pdfHeight - margin * 2;
+      let y = 32;
 
-      // Fit-to-page proporcional
-      const canvasAspect = canvas.width / canvas.height;
-      let renderW = maxW;
-      let renderH = maxW / canvasAspect;
+      // ============================================================
+      // EYEBROW + TÍTULO
+      // ============================================================
+      // Pill verde
+      doc.setFillColor(...C.greenSoft);
+      doc.roundedRect(M, y - 4, 56, 6.5, 3.25, 3.25, 'F');
+      doc.setTextColor(...C.greenDark);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.text('• PLAN PERSONALIZADO', M + 28, y, { align: 'center' });
 
-      if (renderH > maxH) {
-        renderH = maxH;
-        renderW = maxH * canvasAspect;
+      y += 10;
+
+      doc.setTextColor(...C.brown);
+      doc.setFontSize(24);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Tu mascota necesita ${calc.gramosTotalDia} g al día`, M, y);
+
+      y += 7;
+      doc.setTextColor(...C.muted);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const subtitle = `Plan basado en ${peso} kg, edad ${edad.toLowerCase()}, actividad ${actividad.toLowerCase()}${perros > 1 ? `, ${perros} mascotas` : ''}.`;
+      doc.text(subtitle, M, y);
+
+      y += 10;
+
+      // ============================================================
+      // CAJA RECOMENDACIÓN (con imagen del producto si la tenemos)
+      // ============================================================
+      const recBoxH = 42;
+      doc.setFillColor(...C.creamCard);
+      doc.roundedRect(M, y, CW, recBoxH, 3, 3, 'F');
+
+      // Imagen del producto (lado izquierdo)
+      let textStartX = M + 6;
+      if (productImage) {
+        const imgSize = 34;
+        const imgX = M + 4;
+        const imgY = y + 4;
+        doc.addImage(
+          productImage.dataUrl,
+          'JPEG',
+          imgX,
+          imgY,
+          imgSize,
+          imgSize,
+          undefined,
+          'FAST'
+        );
+        textStartX = M + 4 + imgSize + 6;
       }
 
-      // Centrar horizontalmente, alinear arriba verticalmente
-      const xOffset = (pdfWidth - renderW) / 2;
-      const yOffset = margin;
+      // Tag verde en la esquina superior izquierda
+      doc.setFillColor(...C.greenDark);
+      doc.roundedRect(M + 4, y + 4, 36, 4.5, 2.25, 2.25, 'F');
+      doc.setTextColor(...C.white);
+      doc.setFontSize(6);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RECOMENDACIÓN DOGGIE GOURMET', M + 4 + 18, y + 7.2, { align: 'center' });
 
-      // PNG = sin pérdida = texto perfectamente nítido
-      const imgData = canvas.toDataURL('image/png');
-      doc.addImage(imgData, 'PNG', xOffset, yOffset, renderW, renderH);
+      // Categoría (POLLO / etc)
+      doc.setTextColor(...C.green);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.text(calc.product.tag.toUpperCase(), textStartX, y + 14);
 
+      // Nombre del producto
+      doc.setTextColor(...C.brown);
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text(calc.product.name, textStartX, y + 23);
+
+      // Tag de tamaño
+      doc.setDrawColor(...C.green);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(textStartX, y + 26, 14, 5, 2.5, 2.5, 'D');
+      doc.setTextColor(...C.brown);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text(calc.product.size, textStartX + 7, y + 29.5, { align: 'center' });
+
+      // Descripción
+      doc.setTextColor(...C.muted);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      const descLines = doc.splitTextToSize(calc.product.desc, CW - (textStartX - M) - 8);
+      doc.text(descLines.slice(0, 2), textStartX, y + 36);
+
+      y += recBoxH + 6;
+
+      // ============================================================
+      // 3 STATS EN FILA (Porción · Compra sugerida (verde) · Equivale)
+      // ============================================================
+      const statW = (CW - 6) / 3;
+      const statH = 28;
+
+      // Stat 1: Porción diaria
+      doc.setFillColor(...C.cream);
+      doc.setDrawColor(...C.greenSoft);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(M, y, statW, statH, 3, 3, 'FD');
+      doc.setTextColor(...C.muted);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.text('PORCIÓN DIARIA', M + 4, y + 6);
+      doc.setTextColor(...C.brown);
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${calc.gramosTotalDia}`, M + 4, y + 16);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text('g', M + 4 + doc.getTextWidth(`${calc.gramosTotalDia}`) + 1, y + 16);
+      doc.setTextColor(...C.muted);
+      doc.setFontSize(8);
+      doc.text(`${calc.bagsDia.toFixed(2)} bolsas/día`, M + 4, y + 23);
+
+      // Stat 2: Compra sugerida (CAJA VERDE - destacada)
+      const stat2X = M + statW + 3;
+      doc.setFillColor(...C.green);
+      doc.roundedRect(stat2X, y, statW, statH, 3, 3, 'F');
+      doc.setTextColor(...C.white);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.text('COMPRA SUGERIDA', stat2X + 4, y + 6);
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${periodoData.bolsas}`, stat2X + 4, y + 16);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text('bolsas', stat2X + 4 + doc.getTextWidth(`${periodoData.bolsas}`) + 1.5, y + 16);
+      doc.setFontSize(8);
+      doc.text(`${periodo === 'quincenal' ? 'Cada 15 días' : 'Cada 30 días'} · ${calc.product.size}`, stat2X + 4, y + 23);
+
+      // Stat 3: Equivale a
+      const stat3X = M + (statW + 3) * 2;
+      doc.setFillColor(...C.cream);
+      doc.setDrawColor(...C.greenSoft);
+      doc.roundedRect(stat3X, y, statW, statH, 3, 3, 'FD');
+      doc.setTextColor(...C.muted);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.text('EQUIVALE A', stat3X + 4, y + 6);
+      doc.setTextColor(...C.brown);
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      const equivaleNum = periodo === 'quincenal' ? calc.bagsMes : calc.bagsQuincena;
+      doc.text(`${equivaleNum}`, stat3X + 4, y + 16);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text('bolsas', stat3X + 4 + doc.getTextWidth(`${equivaleNum}`) + 1.5, y + 16);
+      doc.setTextColor(...C.muted);
+      doc.setFontSize(8);
+      doc.text(periodo === 'quincenal' ? 'al mes' : 'cada quincena', stat3X + 4, y + 23);
+
+      y += statH + 6;
+
+      // ============================================================
+      // BOX ENTREGA (verde claro)
+      // ============================================================
+      const delivH = 14;
+      doc.setFillColor(...C.greenSoft);
+      doc.roundedRect(M, y, CW, delivH, 3, 3, 'F');
+      doc.setTextColor(...C.greenDark);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Nosotros nos encargamos de la entrega.', M + 6, y + 6);
+      doc.setTextColor(...C.brown);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Domicilio gratis, cadena fría a -18 °C, en 24-48 horas.', M + 6, y + 11);
+
+      y += delivH + 6;
+
+      // ============================================================
+      // TU PLAN EN DETALLE (grid 3x2)
+      // ============================================================
+      doc.setTextColor(...C.green);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text('▮ TU PLAN EN DETALLE', M, y);
+      y += 6;
+
+      const datos = [
+        ['MASCOTA', `${especie === 'gato' ? 'Gato' : 'Perro'} · ${raza}`],
+        ['PESO', `${peso} kg`],
+        ['EDAD', edad],
+        ['ACTIVIDAD', actividad],
+        ['CANTIDAD', `${perros} ${perros === 1 ? 'mascota' : 'mascotas'}`],
+        ['PERIODO', periodo === 'quincenal' ? 'Quincenal' : 'Mensual']
+      ];
+
+      const colW = CW / 3;
+      datos.forEach((d, i) => {
+        const col = i % 3;
+        const row = Math.floor(i / 3);
+        const x = M + col * colW;
+        const yy = y + row * 12;
+        doc.setTextColor(...C.muted);
+        doc.setFontSize(6.5);
+        doc.setFont('helvetica', 'bold');
+        doc.text(d[0], x, yy);
+        doc.setTextColor(...C.brown);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(d[1], x, yy + 5);
+      });
+      y += 28;
+
+      // ============================================================
+      // DISCLAIMER
+      // ============================================================
+      const discH = 18;
+      doc.setFillColor(245, 240, 218);
+      doc.roundedRect(M, y, CW, discH, 2, 2, 'F');
+      doc.setTextColor(...C.green);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.text('NOTA IMPORTANTE', M + 4, y + 5);
+      doc.setTextColor(...C.brown);
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'normal');
+      const disclaimer = 'Las recomendaciones son estimadas con base en peso, edad y actividad. Para mascotas con condiciones especiales (sobrepeso, gestación, enfermedades, alergias), consulta a tu veterinario antes de iniciar la dieta BARF.';
+      const splitDisc = doc.splitTextToSize(disclaimer, CW - 8);
+      doc.text(splitDisc, M + 4, y + 10);
+
+      // ============================================================
+      // FOOTER (banda verde inferior)
+      // ============================================================
+      doc.setFillColor(...C.greenDark);
+      doc.rect(0, PH - 18, PW, 18, 'F');
+      doc.setTextColor(...C.white);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('¿Listo para tu pedido?', M, PH - 10);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text('WhatsApp: 33 1844 0265 · doggiegourmet.com.mx', M, PH - 5);
+      doc.setFontSize(7);
+      doc.text('Plan generado por Doggie Gourmet', PW - M, PH - 6, { align: 'right' });
+
+      // Guardar
       const fileName = `dieta-doggie-gourmet-${new Date().toISOString().slice(0, 10)}.pdf`;
       doc.save(fileName);
     } catch (err) {
       console.error('Error al generar PDF:', err);
-      hiddenElements.forEach(({ el, prevDisplay }) => { el.style.display = prevDisplay; });
       alert('No se pudo generar el PDF. Intenta de nuevo en un momento.');
     } finally {
       setPdfLoading(false);
