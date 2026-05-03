@@ -2190,3 +2190,149 @@ textarea.field-input { min-height: 130px; padding: 14px 16px; resize: vertical; 
 @media (max-width: 720px) {
   .puntos-closing-light { padding: 24px 0 48px; }
 }
+
+/* ============================================================
+   MOBILE OPTIMIZATIONS - HOME PAGE
+   José Carlos feedback: reducir verticalidad, carruseles horizontales
+   Solo afecta < 720px. Desktop intacto.
+   ============================================================ */
+@media (max-width: 720px) {
+
+  /* ---- HERO: compactar todo ---- */
+  .hero { padding: 40px 0 32px; }
+
+  .hero-eyebrow-row { font-size: 11px; gap: 8px; margin-bottom: 16px; }
+  .hero-eyebrow-row .dot { width: 8px; height: 8px; }
+
+  .h-display {
+    font-size: clamp(36px, 9vw, 44px) !important;
+    line-height: 1.05 !important;
+    letter-spacing: -0.02em;
+    margin-bottom: 0;
+  }
+
+  .lead { font-size: 14px !important; line-height: 1.55; margin-top: 16px !important; }
+
+  .hero-cta-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .hero-cta-row .btn { width: 100%; justify-content: center; }
+  .hero-cta-row .btn-lg { padding: 14px 20px; font-size: 14px; }
+
+  /* Stats hero: más compactos */
+  .hero-stats {
+    gap: 16px !important;
+    margin-top: 24px !important;
+    padding-top: 20px !important;
+  }
+  .hero-stat-num { font-size: 24px !important; }
+  .hero-stat-lbl { font-size: 11px !important; line-height: 1.3; }
+
+  /* Imagen hero: más chica */
+  .hero-image-stack { aspect-ratio: 1/1; max-height: 320px; margin-top: 24px; }
+  .hero-image-tag { padding: 10px 14px; font-size: 12px; }
+  .hero-image-tag-text { font-size: 11px; }
+  .hero-image-tag-text small { font-size: 10px; }
+  .hero-image-badge { padding: 14px; max-width: 180px; }
+  .hero-image-badge .ico { font-size: 22px; }
+  .hero-image-badge .lbl { font-size: 11px; margin-top: 6px; }
+
+  /* ---- SECTION HEADERS más compactos ---- */
+  .section { padding: 48px 0; }
+  .section-tight { padding: 32px 0; }
+  .h-section { font-size: clamp(28px, 7vw, 36px) !important; line-height: 1.1; }
+  .eyebrow { font-size: 11px; }
+  .section-head { gap: 12px; margin-bottom: 24px; }
+  .section-head-link { font-size: 13px; }
+
+  /* ---- CARRUSEL: cat-grid (BARF / Paletas / Perfumes) ---- */
+  /* En mobile, override del grid 1fr por carrusel horizontal con scroll-snap */
+  .cat-grid {
+    display: flex !important;
+    flex-direction: row !important;
+    grid-template-columns: none !important;
+    gap: 16px !important;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 20px;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px 20px 20px;
+    margin: 0 -20px;
+    scrollbar-width: none;
+  }
+  .cat-grid::-webkit-scrollbar { display: none; }
+  .cat-grid > .cat-card {
+    flex: 0 0 85%;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+  }
+
+  /* Dots indicators (los pintamos vía JS pero ya dejo el CSS listo) */
+  .carousel-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .carousel-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--line);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .carousel-dot.is-active {
+    background: var(--green);
+    width: 24px;
+  }
+
+  /* ---- CARRUSEL: why-grid (La diferencia se nota) ---- */
+  /* Override del grid para que en TODO mobile sea carrusel, no solo <520px */
+  .why-grid {
+    display: flex !important;
+    flex-direction: row !important;
+    grid-template-columns: none !important;
+    gap: 12px !important;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 20px;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px 20px 20px;
+    margin: 0 -20px;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    scrollbar-width: none;
+  }
+  .why-grid::-webkit-scrollbar { display: none; }
+  .why-grid > .why-cell {
+    flex: 0 0 80%;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+    background: var(--cream) !important;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--line);
+    padding: 24px;
+  }
+
+  /* ---- BANNER INV (calculadora + inventario): compactar ---- */
+  .banner-inv {
+    padding: 28px 22px !important;
+    border-radius: var(--r-md);
+  }
+  .banner-inv h2 { font-size: 26px !important; line-height: 1.1; margin-bottom: 12px !important; }
+  .banner-inv p { font-size: 14px; margin-bottom: 18px !important; }
+  .banner-inv .btn-lg { padding: 13px 22px; font-size: 14px; }
+  .banner-mock { padding: 16px !important; font-size: 13px; }
+  .banner-mock-head { font-size: 11px; margin-bottom: 10px; }
+  .banner-mock-row { padding: 8px 0; font-size: 13px; }
+
+  /* Strip: que no se vea tan grande */
+  .strip { padding: 14px 0; font-size: 13px; }
+}
