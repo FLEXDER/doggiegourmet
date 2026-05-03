@@ -1063,7 +1063,7 @@ function CatalogView() {
             marginBottom: 60
           }}>
             {visible.map((p) =>
-              <ProductCard
+              <CatalogProductCard
                 key={p.id}
                 product={p}
                 onClick={() => setEditing(p)} />
@@ -1085,7 +1085,7 @@ function CatalogView() {
 /* ============================================================
    PRODUCT CARD
    ============================================================ */
-function ProductCard({ product, onClick }) {
+function CatalogProductCard({ product, onClick }) {
   const categoryColors = {
     'BARF': { bg: '#73963C', label: 'BARF' },
     'Paletas': { bg: '#D4A04C', label: 'Paletas' },
