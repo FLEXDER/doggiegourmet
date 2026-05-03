@@ -55,34 +55,36 @@ function Nav({ route, setRoute }) {
   const [open, setOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   return (
-    <header className="nav">
-      <div className="container nav-inner">
-        <div className="nav-brand" onClick={() => {setRoute('home');setOpen(false);}}>
-          <img src="assets/brand/isotipo.png" alt="Doggie Gourmet" />
-          <div>
-            <div className="nav-brand-text">Doggie Gourmet</div>
-            <div className="nav-brand-sub">Alimento · Estilo de vida</div>
+    <>
+      <header className="nav">
+        <div className="container nav-inner">
+          <div className="nav-brand" onClick={() => {setRoute('home');setOpen(false);}}>
+            <img src="assets/brand/isotipo.png" alt="Doggie Gourmet" />
+            <div>
+              <div className="nav-brand-text">Doggie Gourmet</div>
+              <div className="nav-brand-sub">Alimento · Estilo de vida</div>
+            </div>
+          </div>
+          <nav className={`nav-links ${open ? 'open' : ''}`}>
+            {NAV_ITEMS.map((item) =>
+            <button key={item.id}
+            className={`nav-link ${item.cta ? 'nav-link-cta' : ''} ${route === item.id ? 'active' : ''}`}
+            onClick={() => {setRoute(item.id);setOpen(false);}}>
+                {item.label}
+              </button>
+            )}
+          </nav>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <window.CartButton onClick={() => setCartOpen(true)} />
+            <button className="nav-mobile-toggle" onClick={() => setOpen(!open)} aria-label="Menú">
+              <Icon name={open ? 'x' : 'menu'} size={20} />
+            </button>
           </div>
         </div>
-        <nav className={`nav-links ${open ? 'open' : ''}`}>
-          {NAV_ITEMS.map((item) =>
-          <button key={item.id}
-          className={`nav-link ${item.cta ? 'nav-link-cta' : ''} ${route === item.id ? 'active' : ''}`}
-          onClick={() => {setRoute(item.id);setOpen(false);}}>
-              {item.label}
-            </button>
-          )}
-        </nav>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <window.CartButton onClick={() => setCartOpen(true)} />
-          <button className="nav-mobile-toggle" onClick={() => setOpen(!open)} aria-label="Menú">
-            <Icon name={open ? 'x' : 'menu'} size={20} />
-          </button>
-        </div>
-      </div>
+      </header>
       <window.CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
-      <window.CartToast />
-    </header>);
+      <window.CartToast suppressed={cartOpen} />
+    </>);
 
 }
 
