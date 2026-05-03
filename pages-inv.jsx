@@ -910,7 +910,7 @@ function ReportsView() {
           </div>
           <div className="inv2-master-tools">
             <button className="btn btn-ghost btn-sm" onClick={refresh} disabled={loadingReports}>
-              <Icon name="arrow" size={12} /> {loadingReports ? 'Cargando...' : 'Actualizar'}
+              <Icon name="refresh" size={12} /> {loadingReports ? 'Cargando...' : 'Actualizar'}
             </button>
           </div>
         </div>
@@ -1036,7 +1036,7 @@ function CatalogView() {
           </div>
           <div className="inv2-master-tools">
             <button className="btn btn-ghost btn-sm" onClick={refresh} disabled={loading}>
-              <Icon name="arrow" size={12} /> {loading ? 'Cargando...' : 'Actualizar'}
+              <Icon name="refresh" size={12} /> {loading ? 'Cargando...' : 'Actualizar'}
             </button>
             <button className="btn btn-primary btn-sm" onClick={() => setEditing({})}>
               <Icon name="plus" size={12} /> Nuevo producto
@@ -1737,7 +1737,7 @@ function InventoryView() {
           </div>
           <div className="inv2-master-tools" style={{ flexWrap: 'wrap' }}>
             <button className="btn btn-ghost btn-sm" onClick={refresh} disabled={loading}>
-              <Icon name="arrow" size={12} /> {loading ? 'Cargando...' : 'Actualizar'}
+              <Icon name="refresh" size={12} /> {loading ? 'Cargando...' : 'Actualizar'}
             </button>
             <button className="btn btn-ghost btn-sm" onClick={() => setMovementModal('ajuste')}>
               <Icon name="plus" size={12} /> Ajustar
