@@ -181,7 +181,7 @@ window.CartButton = CartButton;
 /* ============================================================
    TOAST — notificación al agregar
    ============================================================ */
-function CartToast() {
+function CartToast({ suppressed = false }) {
   const [toast, setToast] = useSC(null); // {product, id}
   const [visible, setVisible] = useSC(false);
 
@@ -201,7 +201,7 @@ function CartToast() {
     };
   }, []);
 
-  if (!toast) return null;
+  if (!toast || suppressed) return null;
 
   return (
     <div style={{
@@ -366,7 +366,7 @@ function CartDrawer({ open, onClose }) {
         right: 0,
         bottom: 0,
         width: '100%',
-        maxWidth: 420,
+        maxWidth: 500,
         background: 'var(--paper)',
         zIndex: 999,
         boxShadow: '-20px 0 60px -10px rgba(74, 59, 16, 0.18)',
@@ -428,12 +428,18 @@ function CartDrawer({ open, onClose }) {
         </div>
 
         {/* Body — productos */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+        <div style={{
+          flex: 1,
+          overflowY: 'auto',
+          background: 'var(--paper)',
+          minHeight: 0
+        }}>
           {items.length === 0 ?
             <div style={{
               textAlign: 'center',
               padding: '60px 30px',
-              color: 'var(--brown-soft)'
+              color: 'var(--brown-soft)',
+              background: 'var(--paper)'
             }}>
               <div style={{
                 width: 60,
@@ -466,49 +472,74 @@ function CartDrawer({ open, onClose }) {
               <div key={it.id} style={{
                 display: 'flex',
                 gap: 14,
-                padding: '14px 24px',
-                borderBottom: '1px solid var(--line)'
+                padding: '16px 24px',
+                borderBottom: '1px solid var(--line)',
+                background: 'var(--paper)',
+                position: 'relative'
               }}>
                 {/* Imagen */}
                 <div style={{
-                  width: 76,
-                  height: 76,
-                  borderRadius: 10,
-                  background: it.img ? `url(${it.img}) center/cover` : 'var(--cream)',
+                  width: 90,
+                  height: 90,
+                  borderRadius: 12,
+                  background: 'var(--cream)',
                   border: '1px solid var(--line)',
-                  flexShrink: 0
-                }} />
+                  flexShrink: 0,
+                  overflow: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  {it.img &&
+                    <img
+                      src={it.img}
+                      alt={it.name}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: 'block'
+                      }} />
+                  }
+                </div>
 
                 {/* Info */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontWeight: 600,
-                    color: 'var(--brown)',
-                    fontSize: 14,
-                    lineHeight: 1.3,
-                    marginBottom: 2
-                  }}>
-                    {it.name}
-                  </div>
-                  <div style={{
-                    fontSize: 11,
-                    color: 'var(--brown-soft)',
-                    fontFamily: 'var(--font-mono)',
-                    letterSpacing: '0.04em',
-                    marginBottom: 8
-                  }}>
-                    {it.size} · ${it.price} c/u
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div style={{ paddingRight: 24 }}>
+                    <div style={{
+                      fontWeight: 600,
+                      color: 'var(--brown)',
+                      fontSize: 15,
+                      lineHeight: 1.25,
+                      marginBottom: 4
+                    }}>
+                      {it.name}
+                    </div>
+                    <div style={{
+                      fontSize: 11,
+                      color: 'var(--brown-soft)',
+                      fontFamily: 'var(--font-mono)',
+                      letterSpacing: '0.04em'
+                    }}>
+                      {it.size} · ${it.price} c/u
+                    </div>
                   </div>
 
                   {/* Controles cantidad + total */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginTop: 8
+                  }}>
                     <div style={{
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: 0,
                       border: '1.5px solid var(--line)',
                       borderRadius: 100,
-                      overflow: 'hidden'
+                      overflow: 'hidden',
+                      background: 'var(--paper)'
                     }}>
                       <button
                         onClick={() => window.cartStore.decrement(it.id)}
@@ -516,21 +547,24 @@ function CartDrawer({ open, onClose }) {
                         style={{
                           background: 'transparent',
                           border: 'none',
-                          width: 28,
-                          height: 28,
+                          width: 30,
+                          height: 30,
                           cursor: 'pointer',
                           color: 'var(--brown)',
-                          fontSize: 14,
-                          fontWeight: 600
+                          fontSize: 16,
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
                         }}>
                         −
                       </button>
                       <div style={{
-                        minWidth: 30,
+                        minWidth: 32,
                         textAlign: 'center',
-                        fontWeight: 600,
+                        fontWeight: 700,
                         color: 'var(--brown)',
-                        fontSize: 13
+                        fontSize: 14
                       }}>
                         {it.quantity}
                       </div>
@@ -540,40 +574,50 @@ function CartDrawer({ open, onClose }) {
                         style={{
                           background: 'transparent',
                           border: 'none',
-                          width: 28,
-                          height: 28,
+                          width: 30,
+                          height: 30,
                           cursor: 'pointer',
                           color: 'var(--brown)',
-                          fontSize: 14,
-                          fontWeight: 600
+                          fontSize: 16,
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
                         }}>
                         +
                       </button>
                     </div>
                     <div style={{
                       fontFamily: 'var(--font-display)',
-                      fontSize: 16,
-                      fontWeight: 600,
-                      color: 'var(--green-dark)'
+                      fontSize: 18,
+                      fontWeight: 700,
+                      color: 'var(--green-dark)',
+                      letterSpacing: '-0.01em'
                     }}>
                       ${(it.price * it.quantity).toLocaleString('es-MX')}
                     </div>
                   </div>
                 </div>
 
-                {/* Eliminar */}
+                {/* Eliminar (esquina superior derecha) */}
                 <button
                   onClick={() => window.cartStore.remove(it.id)}
                   aria-label="Eliminar"
                   style={{
+                    position: 'absolute',
+                    top: 12,
+                    right: 18,
                     background: 'transparent',
                     border: 'none',
                     color: 'var(--brown-soft)',
                     cursor: 'pointer',
                     padding: 4,
-                    height: 'fit-content',
-                    fontSize: 14
-                  }}>
+                    fontSize: 14,
+                    opacity: 0.6,
+                    transition: 'opacity 0.15s'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.opacity = 1; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.opacity = 0.6; }}>
                   <Icon name="x" size={12} />
                 </button>
               </div>
@@ -642,69 +686,54 @@ function CartDrawer({ open, onClose }) {
                 background: meetsMinimum ? 'var(--green)' : 'var(--brown-soft)',
                 color: 'white',
                 border: 'none',
-                padding: '16px 20px',
+                padding: '14px 20px',
                 borderRadius: 100,
                 fontFamily: 'inherit',
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: 600,
                 cursor: meetsMinimum ? 'pointer' : 'not-allowed',
                 opacity: meetsMinimum ? 1 : 0.55,
-                transition: 'all 0.15s ease',
-                marginBottom: 10
+                transition: 'all 0.15s ease'
               }}>
               {sending ? 'Procesando...' : meetsMinimum ? 'Proceder al pedido' : `Mínimo $${CART_MIN_TOTAL} MXN`}
             </button>
 
-            {/* Aviso de mayoreo */}
+            {/* Aviso de mayoreo (compacto, una sola fila) */}
             <div style={{
-              padding: '12px 14px',
+              marginTop: 10,
+              padding: '10px 12px',
               background: 'var(--cream)',
               borderRadius: 10,
               border: '1px solid var(--line)',
-              fontSize: 12.5,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              fontSize: 12,
               color: 'var(--brown)',
-              lineHeight: 1.5
+              lineHeight: 1.35
             }}>
-              <strong style={{ display: 'block', marginBottom: 4, color: 'var(--brown)' }}>
-                ¿Pedido más grande?
-              </strong>
-              <span style={{ color: 'var(--brown-soft)' }}>
-                Si tu pedido es de mayor volumen, los precios pueden mejorar dependiendo de la cantidad. Contáctanos directo para cotizarlo.
+              <span style={{ flex: 1 }}>
+                <strong>¿Pedido más grande?</strong>{' '}
+                <span style={{ color: 'var(--brown-soft)' }}>Mejor precio por volumen.</span>
               </span>
               <button
                 onClick={openWholesaleWhatsapp}
                 style={{
-                  marginTop: 10,
-                  width: '100%',
                   background: '#25D366',
                   color: 'white',
                   border: 'none',
-                  padding: '10px 16px',
+                  padding: '8px 14px',
                   borderRadius: 100,
                   fontFamily: 'inherit',
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: 600,
                   cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0
                 }}>
-                Cotizar por WhatsApp
+                Cotizar
               </button>
             </div>
-
-            {/* Nota legal */}
-            <p style={{
-              fontSize: 11,
-              color: 'var(--brown-soft)',
-              marginTop: 10,
-              marginBottom: 0,
-              textAlign: 'center',
-              lineHeight: 1.4
-            }}>
-              Al continuar, te llevamos a WhatsApp para confirmar entrega y pago.
-            </p>
           </div>
         }
       </aside>
@@ -720,4 +749,24 @@ window.CartDrawer = CartDrawer;
 window.addToCart = (product) => {
   if (!product || !product.id) return;
   window.cartStore.add(product);
+};
+
+/* Hook para obtener la cantidad de un producto específico en el carrito.
+   Re-renderiza automáticamente cuando cambia. Útil para mostrar +/- en cards. */
+window.useCartItemQuantity = function (productId) {
+  const [qty, setQty] = useSC(() => {
+    const item = window.cartStore.getItems().find(it => it.id === productId);
+    return item ? item.quantity : 0;
+  });
+
+  useEC(() => {
+    const handler = () => {
+      const item = window.cartStore.getItems().find(it => it.id === productId);
+      setQty(item ? item.quantity : 0);
+    };
+    window.addEventListener('cart-changed', handler);
+    return () => window.removeEventListener('cart-changed', handler);
+  }, [productId]);
+
+  return qty;
 };
