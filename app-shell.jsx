@@ -132,7 +132,110 @@ function Footer({ setRoute }) {
 
 }
 
+/**
+ * Hook + componente para carruseles con scroll-snap.
+ * Acopla unos dots indicadores al elemento del carrusel y permite
+ * scrollear a un slide específico. Solo se renderiza en mobile.
+ *
+ * Uso:
+ *   const ref = useRef(null);
+ *   <div ref={ref} className="cat-grid">...</div>
+ *   <CarouselDots targetRef={ref} count={3} />
+ */
+function useIsMobile(breakpoint = 720) {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' && window.innerWidth <= breakpoint
+  );
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onResize = () => setIsMobile(window.innerWidth <= breakpoint);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [breakpoint]);
+  return isMobile;
+}
+
+function CarouselDots({ targetRef, count, autoplayMs = 0 }) {
+  const isMobile = useIsMobile();
+  const [active, setActive] = useState(0);
+  const userInteractedRef = useRef(false);
+  const interactionTimerRef = useRef(null);
+
+  // Tracking del scroll para actualizar el dot activo
+  useEffect(() => {
+    if (!isMobile) return;
+    const el = targetRef.current;
+    if (!el) return;
+
+    const onScroll = () => {
+      // Marcar interacción del usuario para pausar autoplay temporal
+      userInteractedRef.current = true;
+      if (interactionTimerRef.current) clearTimeout(interactionTimerRef.current);
+      interactionTimerRef.current = setTimeout(() => {
+        userInteractedRef.current = false;
+      }, 2000);
+
+      // Determinar slide activo basado en scroll
+      const slideWidth = el.scrollWidth / count;
+      const currentIdx = Math.round(el.scrollLeft / slideWidth);
+      setActive(Math.min(Math.max(currentIdx, 0), count - 1));
+    };
+
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      if (interactionTimerRef.current) clearTimeout(interactionTimerRef.current);
+    };
+  }, [isMobile, targetRef, count]);
+
+  // Autoplay opcional
+  useEffect(() => {
+    if (!isMobile || !autoplayMs) return;
+    const interval = setInterval(() => {
+      if (userInteractedRef.current) return;
+      const el = targetRef.current;
+      if (!el) return;
+      const next = (active + 1) % count;
+      const slideWidth = el.scrollWidth / count;
+      el.scrollTo({ left: next * slideWidth, behavior: 'smooth' });
+    }, autoplayMs);
+    return () => clearInterval(interval);
+  }, [isMobile, autoplayMs, active, count, targetRef]);
+
+  const goTo = (idx) => {
+    const el = targetRef.current;
+    if (!el) return;
+    const slideWidth = el.scrollWidth / count;
+    el.scrollTo({ left: idx * slideWidth, behavior: 'smooth' });
+    userInteractedRef.current = true;
+    if (interactionTimerRef.current) clearTimeout(interactionTimerRef.current);
+    interactionTimerRef.current = setTimeout(() => {
+      userInteractedRef.current = false;
+    }, 4000);
+  };
+
+  if (!isMobile) return null;
+
+  return (
+    <div className="carousel-dots" role="tablist" aria-label="Navegación del carrusel">
+      {Array.from({ length: count }).map((_, i) => (
+        <button
+          key={i}
+          className={`carousel-dot ${i === active ? 'is-active' : ''}`}
+          onClick={() => goTo(i)}
+          role="tab"
+          aria-selected={i === active}
+          aria-label={`Ir al elemento ${i + 1}`}
+        />
+      ))}
+    </div>
+  );
+}
+
 function HomePage({ setRoute }) {
+  const catGridRef = useRef(null);
+  const whyGridRef = useRef(null);
+
   return (
     <>
       <section className="hero">
@@ -142,7 +245,7 @@ function HomePage({ setRoute }) {
               <div className="dot" />
               <span>Calcula tu dieta · Disponible en 3 puntos de venta</span>
             </div>
-            <h1 className="h-display" style={{ fontSize: "76px" }}>
+            <h1 className="h-display">
               Comida <br /><em>Gourmet y natural</em><br />para tu mascota.
             </h1>
             <p className="lead" style={{ marginTop: 24 }}>Somos una empresa dedicada a ofrecer alimento congelado para perros basado en la dieta BARF, diseñada para replicar una
@@ -222,11 +325,12 @@ alimentación natural y balanceada. Nuestro objetivo es mejorar la calidad de 
             </button>
           </div>
 
-          <div className="cat-grid">
+          <div className="cat-grid" ref={catGridRef}>
             <CategoryCard num="01" title="BARF" count={5} img="assets/products/barf-original-500.webp" onClick={() => setRoute('products', 'barf')} />
             <CategoryCard num="02" title="Paletas" count={4} img="assets/products/paleta-platano.webp" onClick={() => setRoute('products', 'paletas')} />
             <CategoryCard num="03" title="Perfumes" count={6} img="assets/products/perfume-woof-girl.webp" onClick={() => setRoute('products', 'perfumes')} />
           </div>
+          <CarouselDots targetRef={catGridRef} count={3} autoplayMs={5000} />
         </div>
       </section>
 
@@ -238,12 +342,13 @@ alimentación natural y balanceada. Nuestro objetivo es mejorar la calidad de 
               <h2 className="h-section" style={{ marginTop: 12 }}>La diferencia se nota <em>en el plato</em>.</h2>
             </div>
           </div>
-          <div className="why-grid">
+          <div className="why-grid" ref={whyGridRef}>
             <div className="why-cell"><div className="ico"><Icon name="leaf" /></div><h4>Ingredientes íntegros</h4><p>Carnes y verduras de origen único. Sin rellenos, subproductos ni conservadores artificiales.</p></div>
             <div className="why-cell"><div className="ico"><Icon name="shield" /></div><h4>Formulado por veterinarios</h4><p>Cada receta aprobada por nutriólogos veterinarios certificados para alimentación diaria.</p></div>
             <div className="why-cell"><div className="ico"><Icon name="snow" /></div><h4>Cadena fría</h4><p>Congelado al instante y enviado a −18 °C para que llegue tal como lo preparamos.</p></div>
             <div className="why-cell"><div className="ico"><Icon name="sparkle" /></div><h4>Lifestyle Premium</h4><p>Desde la cocina hasta el cuidado personal, con el detalle que marca la diferencia.</p></div>
           </div>
+          <CarouselDots targetRef={whyGridRef} count={4} autoplayMs={5000} />
         </div>
       </section>
 
