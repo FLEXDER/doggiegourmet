@@ -567,7 +567,46 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
         allowTaint: false,
         logging: false,
         backgroundColor: paperColor,
-        windowWidth: document.documentElement.offsetWidth
+        windowWidth: document.documentElement.offsetWidth,
+        // CRITICAL FIX: html2canvas no resuelve CSS variables (var(--brown), etc).
+        // El callback onclone nos da acceso al DOM clonado antes de renderizarlo.
+        // Caminamos el árbol original (donde las variables YA están resueltas por
+        // el navegador en getComputedStyle) y copiamos los colores como inline
+        // styles al clon. Así html2canvas ve colores literales y no variables.
+        onclone: (clonedDoc, clonedElement) => {
+          const propsToCopy = [
+            'color',
+            'backgroundColor',
+            'borderTopColor',
+            'borderRightColor',
+            'borderBottomColor',
+            'borderLeftColor',
+            'fill',
+            'stroke',
+            'fontFamily',
+            'fontWeight'
+          ];
+
+          const walk = (origNode, cloneNode) => {
+            if (!origNode || !cloneNode) return;
+            if (origNode.nodeType === 1 && cloneNode.nodeType === 1) {
+              const cs = window.getComputedStyle(origNode);
+              propsToCopy.forEach(prop => {
+                const val = cs[prop];
+                if (val && val !== 'none' && val !== 'normal') {
+                  cloneNode.style[prop] = val;
+                }
+              });
+            }
+            const origChildren = Array.from(origNode.childNodes || []);
+            const cloneChildren = Array.from(cloneNode.childNodes || []);
+            origChildren.forEach((oc, i) => {
+              if (cloneChildren[i]) walk(oc, cloneChildren[i]);
+            });
+          };
+
+          walk(element, clonedElement);
+        }
       });
 
       // Restaurar elementos ocultos
