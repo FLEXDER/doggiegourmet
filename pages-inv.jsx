@@ -1682,7 +1682,7 @@ function InventoryView() {
   return (
     <>
       {/* Selector de POS + stats */}
-      <div className="inv2-master-hero" style={{ paddingTop: 0, paddingBottom: 36 }}>
+      <div className="inv2-master-hero" style={{ paddingTop: 32, paddingBottom: 36 }}>
         <div className="container">
           {/* Selector de POS */}
           <div style={{ display: 'flex', gap: 10, marginBottom: 28, flexWrap: 'wrap' }}>
