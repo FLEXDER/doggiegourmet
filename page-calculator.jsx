@@ -621,33 +621,33 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
       doc.setFont('helvetica', 'bold');
       doc.text('• PLAN PERSONALIZADO', M + 28, y, { align: 'center' });
 
-      y += 10;
+      y += 11;
 
       doc.setTextColor(...C.brown);
-      doc.setFontSize(24);
+      doc.setFontSize(26);
       doc.setFont('helvetica', 'bold');
       doc.text(`Tu mascota necesita ${calc.gramosTotalDia} g al día`, M, y);
 
-      y += 7;
+      y += 8;
       doc.setTextColor(...C.muted);
-      doc.setFontSize(10);
+      doc.setFontSize(10.5);
       doc.setFont('helvetica', 'normal');
       const subtitle = `Plan basado en ${peso} kg, edad ${edad.toLowerCase()}, actividad ${actividad.toLowerCase()}${perros > 1 ? `, ${perros} mascotas` : ''}.`;
       doc.text(subtitle, M, y);
 
-      y += 10;
+      y += 12;
 
       // ============================================================
-      // CAJA RECOMENDACIÓN (con imagen del producto si la tenemos)
+      // CAJA RECOMENDACIÓN (con imagen del producto)
       // ============================================================
-      const recBoxH = 42;
+      const recBoxH = 56;
       doc.setFillColor(...C.creamCard);
       doc.roundedRect(M, y, CW, recBoxH, 3, 3, 'F');
 
       // Imagen del producto (lado izquierdo)
       let textStartX = M + 6;
       if (productImage) {
-        const imgSize = 34;
+        const imgSize = 48;
         const imgX = M + 4;
         const imgY = y + 4;
         doc.addImage(
@@ -660,89 +660,95 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
           undefined,
           'FAST'
         );
-        textStartX = M + 4 + imgSize + 6;
+        textStartX = M + 4 + imgSize + 8;
       }
 
-      // Tag verde en la esquina superior izquierda
-      doc.setFillColor(...C.greenDark);
-      doc.roundedRect(M + 4, y + 4, 36, 4.5, 2.25, 2.25, 'F');
-      doc.setTextColor(...C.white);
-      doc.setFontSize(6);
+      // Tag pequeño "RECOMENDACIÓN" en la columna del texto (arriba)
+      doc.setTextColor(...C.green);
+      doc.setFontSize(6.5);
       doc.setFont('helvetica', 'bold');
-      doc.text('RECOMENDACIÓN DOGGIE GOURMET', M + 4 + 18, y + 7.2, { align: 'center' });
+      doc.text('• RECOMENDACIÓN DOGGIE GOURMET', textStartX, y + 8);
 
       // Categoría (POLLO / etc)
       doc.setTextColor(...C.green);
-      doc.setFontSize(7);
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
-      doc.text(calc.product.tag.toUpperCase(), textStartX, y + 14);
+      doc.text(calc.product.tag.toUpperCase(), textStartX, y + 16);
 
       // Nombre del producto
       doc.setTextColor(...C.brown);
-      doc.setFontSize(20);
+      doc.setFontSize(24);
       doc.setFont('helvetica', 'bold');
-      doc.text(calc.product.name, textStartX, y + 23);
+      doc.text(calc.product.name, textStartX, y + 27);
 
-      // Tag de tamaño
+      // Tag de tamaño (pill)
       doc.setDrawColor(...C.green);
-      doc.setLineWidth(0.3);
-      doc.roundedRect(textStartX, y + 26, 14, 5, 2.5, 2.5, 'D');
+      doc.setLineWidth(0.4);
+      const sizeTagW = doc.getTextWidth(calc.product.size) + 8;
+      doc.roundedRect(textStartX, y + 31, sizeTagW, 6, 3, 3, 'D');
       doc.setTextColor(...C.brown);
-      doc.setFontSize(8);
+      doc.setFontSize(8.5);
       doc.setFont('helvetica', 'normal');
-      doc.text(calc.product.size, textStartX + 7, y + 29.5, { align: 'center' });
+      doc.text(calc.product.size, textStartX + sizeTagW / 2, y + 35, { align: 'center' });
 
       // Descripción
       doc.setTextColor(...C.muted);
-      doc.setFontSize(8);
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       const descLines = doc.splitTextToSize(calc.product.desc, CW - (textStartX - M) - 8);
-      doc.text(descLines.slice(0, 2), textStartX, y + 36);
+      doc.text(descLines.slice(0, 2), textStartX, y + 45);
 
-      y += recBoxH + 6;
+      y += recBoxH + 8;
 
       // ============================================================
       // 3 STATS EN FILA (Porción · Compra sugerida (verde) · Equivale)
+      // FIX: capturar getTextWidth ANTES de cambiar fontSize para evitar
+      // que la unidad se sobreponga al número.
       // ============================================================
       const statW = (CW - 6) / 3;
-      const statH = 28;
+      const statH = 38;
+
+      // Helper para escribir "NUMERO unidad" sin sobreposición
+      const drawStatValue = (numText, unitText, x, yPos, numColor) => {
+        doc.setTextColor(...numColor);
+        doc.setFontSize(28);
+        doc.setFont('helvetica', 'bold');
+        const numW = doc.getTextWidth(numText); // medir EN size 28
+        doc.text(numText, x, yPos);
+        // Después escribir la unidad
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.text(unitText, x + numW + 2, yPos);
+      };
 
       // Stat 1: Porción diaria
       doc.setFillColor(...C.cream);
       doc.setDrawColor(...C.greenSoft);
-      doc.setLineWidth(0.3);
+      doc.setLineWidth(0.4);
       doc.roundedRect(M, y, statW, statH, 3, 3, 'FD');
       doc.setTextColor(...C.muted);
-      doc.setFontSize(7);
+      doc.setFontSize(7.5);
       doc.setFont('helvetica', 'bold');
-      doc.text('PORCIÓN DIARIA', M + 4, y + 6);
-      doc.setTextColor(...C.brown);
-      doc.setFontSize(20);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${calc.gramosTotalDia}`, M + 4, y + 16);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.text('g', M + 4 + doc.getTextWidth(`${calc.gramosTotalDia}`) + 1, y + 16);
+      doc.text('PORCIÓN DIARIA', M + 5, y + 8);
+      drawStatValue(`${calc.gramosTotalDia}`, 'g', M + 5, y + 22, C.brown);
       doc.setTextColor(...C.muted);
-      doc.setFontSize(8);
-      doc.text(`${calc.bagsDia.toFixed(2)} bolsas/día`, M + 4, y + 23);
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${calc.bagsDia.toFixed(2)} bolsas/día`, M + 5, y + 31);
 
       // Stat 2: Compra sugerida (CAJA VERDE - destacada)
       const stat2X = M + statW + 3;
       doc.setFillColor(...C.green);
       doc.roundedRect(stat2X, y, statW, statH, 3, 3, 'F');
       doc.setTextColor(...C.white);
-      doc.setFontSize(7);
+      doc.setFontSize(7.5);
       doc.setFont('helvetica', 'bold');
-      doc.text('COMPRA SUGERIDA', stat2X + 4, y + 6);
-      doc.setFontSize(20);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${periodoData.bolsas}`, stat2X + 4, y + 16);
-      doc.setFontSize(9);
+      doc.text('COMPRA SUGERIDA', stat2X + 5, y + 8);
+      drawStatValue(`${periodoData.bolsas}`, 'bolsas', stat2X + 5, y + 22, C.white);
+      doc.setTextColor(...C.white);
+      doc.setFontSize(8.5);
       doc.setFont('helvetica', 'normal');
-      doc.text('bolsas', stat2X + 4 + doc.getTextWidth(`${periodoData.bolsas}`) + 1.5, y + 16);
-      doc.setFontSize(8);
-      doc.text(`${periodo === 'quincenal' ? 'Cada 15 días' : 'Cada 30 días'} · ${calc.product.size}`, stat2X + 4, y + 23);
+      doc.text(`${periodo === 'quincenal' ? 'Cada 15 días' : 'Cada 30 días'} · ${calc.product.size}`, stat2X + 5, y + 31);
 
       // Stat 3: Equivale a
       const stat3X = M + (statW + 3) * 2;
@@ -750,48 +756,47 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
       doc.setDrawColor(...C.greenSoft);
       doc.roundedRect(stat3X, y, statW, statH, 3, 3, 'FD');
       doc.setTextColor(...C.muted);
-      doc.setFontSize(7);
+      doc.setFontSize(7.5);
       doc.setFont('helvetica', 'bold');
-      doc.text('EQUIVALE A', stat3X + 4, y + 6);
-      doc.setTextColor(...C.brown);
-      doc.setFontSize(20);
-      doc.setFont('helvetica', 'bold');
+      doc.text('EQUIVALE A', stat3X + 5, y + 8);
       const equivaleNum = periodo === 'quincenal' ? calc.bagsMes : calc.bagsQuincena;
-      doc.text(`${equivaleNum}`, stat3X + 4, y + 16);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.text('bolsas', stat3X + 4 + doc.getTextWidth(`${equivaleNum}`) + 1.5, y + 16);
+      drawStatValue(`${equivaleNum}`, 'bolsas', stat3X + 5, y + 22, C.brown);
       doc.setTextColor(...C.muted);
-      doc.setFontSize(8);
-      doc.text(periodo === 'quincenal' ? 'al mes' : 'cada quincena', stat3X + 4, y + 23);
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'normal');
+      doc.text(periodo === 'quincenal' ? 'al mes' : 'cada quincena', stat3X + 5, y + 31);
 
-      y += statH + 6;
+      y += statH + 8;
 
       // ============================================================
       // BOX ENTREGA (verde claro)
       // ============================================================
-      const delivH = 14;
+      const delivH = 20;
       doc.setFillColor(...C.greenSoft);
       doc.roundedRect(M, y, CW, delivH, 3, 3, 'F');
       doc.setTextColor(...C.greenDark);
-      doc.setFontSize(10);
+      doc.setFontSize(11.5);
       doc.setFont('helvetica', 'bold');
-      doc.text('Nosotros nos encargamos de la entrega.', M + 6, y + 6);
+      doc.text('Nosotros nos encargamos de la entrega.', M + 7, y + 9);
       doc.setTextColor(...C.brown);
-      doc.setFontSize(8);
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
-      doc.text('Domicilio gratis, cadena fría a -18 °C, en 24-48 horas.', M + 6, y + 11);
+      doc.text('Domicilio gratis, cadena fría a -18 °C, en 24-48 horas.', M + 7, y + 15);
 
-      y += delivH + 6;
+      y += delivH + 8;
 
       // ============================================================
       // TU PLAN EN DETALLE (grid 3x2)
       // ============================================================
       doc.setTextColor(...C.green);
-      doc.setFontSize(8);
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.text('▮ TU PLAN EN DETALLE', M, y);
-      y += 6;
+      doc.text('TU PLAN EN DETALLE', M, y);
+      // Línea decorativa debajo del header
+      doc.setDrawColor(...C.greenSoft);
+      doc.setLineWidth(0.4);
+      doc.line(M, y + 2, M + 42, y + 2);
+      y += 9;
 
       const datos = [
         ['MASCOTA', `${especie === 'gato' ? 'Gato' : 'Perro'} · ${raza}`],
@@ -807,34 +812,34 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
         const col = i % 3;
         const row = Math.floor(i / 3);
         const x = M + col * colW;
-        const yy = y + row * 12;
+        const yy = y + row * 16;
         doc.setTextColor(...C.muted);
-        doc.setFontSize(6.5);
+        doc.setFontSize(7);
         doc.setFont('helvetica', 'bold');
         doc.text(d[0], x, yy);
         doc.setTextColor(...C.brown);
-        doc.setFontSize(11);
+        doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        doc.text(d[1], x, yy + 5);
+        doc.text(d[1], x, yy + 6);
       });
-      y += 28;
+      y += 36;
 
       // ============================================================
       // DISCLAIMER
       // ============================================================
-      const discH = 18;
+      const discH = 22;
       doc.setFillColor(245, 240, 218);
       doc.roundedRect(M, y, CW, discH, 2, 2, 'F');
       doc.setTextColor(...C.green);
-      doc.setFontSize(7);
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
-      doc.text('NOTA IMPORTANTE', M + 4, y + 5);
+      doc.text('NOTA IMPORTANTE', M + 5, y + 6);
       doc.setTextColor(...C.brown);
-      doc.setFontSize(7.5);
+      doc.setFontSize(8.5);
       doc.setFont('helvetica', 'normal');
       const disclaimer = 'Las recomendaciones son estimadas con base en peso, edad y actividad. Para mascotas con condiciones especiales (sobrepeso, gestación, enfermedades, alergias), consulta a tu veterinario antes de iniciar la dieta BARF.';
-      const splitDisc = doc.splitTextToSize(disclaimer, CW - 8);
-      doc.text(splitDisc, M + 4, y + 10);
+      const splitDisc = doc.splitTextToSize(disclaimer, CW - 10);
+      doc.text(splitDisc, M + 5, y + 12);
 
       // ============================================================
       // FOOTER (banda verde inferior)
