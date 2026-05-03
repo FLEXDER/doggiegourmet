@@ -280,14 +280,15 @@ function CartDrawer({ open, onClose }) {
   const { items, total, count } = useCart();
   const [sending, setSending] = useSC(false);
 
-  // Scroll lock cuando está abierto
+  // Listener Escape para cerrar (no bloqueamos el scroll del body
+  // para que el usuario pueda seguir navegando el catálogo con el drawer abierto)
   useEC(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
+    if (!open) return;
+    const handler = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
   }, [open]);
 
   const meetsMinimum = total >= CART_MIN_TOTAL;
@@ -358,36 +359,22 @@ function CartDrawer({ open, onClose }) {
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        onClick={onClose}
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(20, 15, 5, 0.45)',
-          backdropFilter: 'blur(4px)',
-          WebkitBackdropFilter: 'blur(4px)',
-          zIndex: 998,
-          opacity: open ? 1 : 0,
-          pointerEvents: open ? 'auto' : 'none',
-          transition: 'opacity 0.25s ease'
-        }} />
-
-      {/* Drawer */}
+      {/* Drawer (sin backdrop — permite seguir navegando el catálogo) */}
       <aside style={{
         position: 'fixed',
         top: 0,
         right: 0,
         bottom: 0,
         width: '100%',
-        maxWidth: 460,
+        maxWidth: 420,
         background: 'var(--paper)',
         zIndex: 999,
-        boxShadow: '-20px 0 60px -10px rgba(74, 59, 16, 0.3)',
+        boxShadow: '-20px 0 60px -10px rgba(74, 59, 16, 0.18)',
         transform: open ? 'translateX(0)' : 'translateX(100%)',
         transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        pointerEvents: open ? 'auto' : 'none'
       }}>
 
         {/* Header */}
