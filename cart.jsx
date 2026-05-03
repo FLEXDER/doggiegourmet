@@ -299,7 +299,7 @@ function CartDrawer({ open, onClose }) {
 
   const buildOrderText = () => {
     const lines = [];
-    lines.push('*Pedido Doggie Gourmet*');
+    lines.push('¡Hola! Quisiera hacer un pedido Doggie Gourmet');
     lines.push('');
     items.forEach((it, i) => {
       lines.push(`${i + 1}. ${it.name} (${it.size}) x${it.quantity} — $${(it.price * it.quantity).toLocaleString('es-MX')}`);
