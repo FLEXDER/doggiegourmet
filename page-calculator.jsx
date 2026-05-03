@@ -36,7 +36,7 @@ function suggestProduct(peso, especie) {
       name: 'Original Gatos',
       size: '250 g',
       gramsPerBag: 250,
-      img: 'assets/products/barf-gatos-250.jpg',
+      img: 'assets/products/barf-gatos-250.webp',
       tag: 'Felinos',
       desc: 'Balanceado para gatos con taurina y proteína de alta calidad.',
     };
@@ -47,7 +47,7 @@ function suggestProduct(peso, especie) {
       name: 'Original Perros Chicos',
       size: '250 g',
       gramsPerBag: 250,
-      img: 'assets/products/barf-original-perros-chicos-250.jpg',
+      img: 'assets/products/barf-original-perros-chicos-250.webp',
       tag: 'Razas pequeñas',
       desc: 'Porciones de 250 g para razas pequeñas y cachorros.',
     };
@@ -58,7 +58,7 @@ function suggestProduct(peso, especie) {
       name: 'Premium',
       size: '500 g',
       gramsPerBag: 500,
-      img: 'assets/products/barf-premium-500.jpg',
+      img: 'assets/products/barf-premium-500.webp',
       tag: '70% Pollo · 30% Carne',
       desc: 'Mezcla con carne de res para perros activos y de talla mediana–grande.',
     };
@@ -68,7 +68,7 @@ function suggestProduct(peso, especie) {
     name: 'Original',
     size: '500 g',
     gramsPerBag: 500,
-    img: 'assets/products/barf-original-500.jpg',
+    img: 'assets/products/barf-original-500.webp',
     tag: 'Pollo',
     desc: 'Nuestra fórmula favorita para perros adultos de talla mediana.',
   };
