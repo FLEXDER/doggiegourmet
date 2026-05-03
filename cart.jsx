@@ -16,6 +16,8 @@ const CART_MIN_TOTAL = 500;
 const CART_WHATSAPP = '523318440265';
 // La WEB3FORMS_KEY se movió al servidor (Edge Function de Supabase) por seguridad.
 // El frontend solo invoca la función submit-order, no maneja la key directamente.
+const CART_SUPABASE_URL = 'https://oaurovkvyrywmdsjhgaj.supabase.co';
+const CART_SUPABASE_KEY = 'sb_publishable_4ORlrwn6sRWVEQ_XTwiOwQ_wbI0UTwF';
 
 /* ============================================================
    STORE: funciones globales del carrito
@@ -311,13 +313,6 @@ function CartDrawer({ open, onClose }) {
 
   const submitOrderToBackend = async () => {
     try {
-      // Llamar a la Edge Function (la key Web3Forms está escondida ahí)
-      // Si window.supabase no existe, fallamos silenciosamente — no bloqueamos al usuario
-      if (!window.supabase) {
-        console.warn('Supabase client no disponible — pedido no guardado en BD');
-        return null;
-      }
-
       const payload = {
         items: items.map((it) => ({
           id: it.id,
@@ -329,15 +324,26 @@ function CartDrawer({ open, onClose }) {
         }))
       };
 
-      const { data, error } = await window.supabase.functions.invoke('submit-order', {
-        body: payload
-      });
+      const response = await fetch(
+        `${CART_SUPABASE_URL}/functions/v1/submit-order`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': CART_SUPABASE_KEY,
+            'Authorization': `Bearer ${CART_SUPABASE_KEY}`
+          },
+          body: JSON.stringify(payload)
+        }
+      );
 
-      if (error) {
-        console.warn('Edge Function error (no bloqueante):', error);
+      if (!response.ok) {
+        const errorBody = await response.text().catch(() => '');
+        console.warn('Edge Function error (no bloqueante):', response.status, errorBody);
         return null;
       }
-      return data;
+
+      return await response.json();
     } catch (err) {
       console.warn('Submit order failed (no bloqueante):', err);
       return null;
