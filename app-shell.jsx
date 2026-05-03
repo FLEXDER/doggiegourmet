@@ -165,7 +165,7 @@ alimentación natural y balanceada. Nuestro objetivo es mejorar la calidad de 
 
           <div className="hero-image-stack">
             <div className="hero-image-main">
-              <img src="assets/products/barf-premium-500.jpg" alt="Premium BARF 500g" />
+              <img src="assets/products/barf-premium-500.webp" alt="Premium BARF 500g" />
             </div>
             <div className="hero-image-tag">
               <div className="hero-image-tag-dot" />
@@ -214,9 +214,9 @@ alimentación natural y balanceada. Nuestro objetivo es mejorar la calidad de 
           </div>
 
           <div className="cat-grid">
-            <CategoryCard num="01" title="BARF" count={5} img="assets/products/barf-original-500.jpg" onClick={() => setRoute('products', 'barf')} />
-            <CategoryCard num="02" title="Paletas" count={4} img="assets/products/paleta-platano.jpg" onClick={() => setRoute('products', 'paletas')} />
-            <CategoryCard num="03" title="Perfumes" count={6} img="assets/products/perfume-woof-girl.jpg" onClick={() => setRoute('products', 'perfumes')} />
+            <CategoryCard num="01" title="BARF" count={5} img="assets/products/barf-original-500.webp" onClick={() => setRoute('products', 'barf')} />
+            <CategoryCard num="02" title="Paletas" count={4} img="assets/products/paleta-platano.webp" onClick={() => setRoute('products', 'paletas')} />
+            <CategoryCard num="03" title="Perfumes" count={6} img="assets/products/perfume-woof-girl.webp" onClick={() => setRoute('products', 'perfumes')} />
           </div>
         </div>
       </section>
