@@ -277,14 +277,51 @@ function ContactPage({ setRoute }) {
     }
   };
 
-  // Estilo responsive: en mobile, las dos columnas se apilan
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
+  // Estilo responsive: detectar si es mobile y reaccionar a cambios de tamaño
+  const [isMobile, setIsMobile] = uSCC(
+    typeof window !== 'undefined' && window.innerWidth < 900
+  );
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onResize = () => setIsMobile(window.innerWidth < 900);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   const heroGridFinal = isMobile
     ? { ...S.heroGrid, gridTemplateColumns: '1fr', gap: 24 }
     : S.heroGrid;
   const gridFinal = isMobile
     ? { ...S.grid, gridTemplateColumns: '1fr', gap: 24 }
     : S.grid;
+
+  // En mobile: cards en grid 2x2 (Correo+Teléfono arriba, Instagram+Cocina abajo)
+  // En desktop: stack vertical como antes
+  const leftColFinal = isMobile
+    ? {
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 12
+      }
+    : S.leftCol;
+
+  // En mobile: cards más compactas (menos padding, icono más chico)
+  const cardFinal = isMobile
+    ? { ...S.card, padding: 18, borderRadius: 18 }
+    : S.card;
+  const cardIconFinal = isMobile
+    ? { ...S.cardIcon, width: 38, height: 38, marginBottom: 14, borderRadius: 11 }
+    : S.cardIcon;
+  const cardTitleFinal = isMobile
+    ? { ...S.cardTitle, fontSize: 16, marginBottom: 4 }
+    : S.cardTitle;
+  const cardSubFinal = isMobile
+    ? { ...S.cardSub, fontSize: 12, marginBottom: 8 }
+    : S.cardSub;
+  const cardLinkFinal = isMobile
+    ? { ...S.cardLink, fontSize: 13, wordBreak: 'break-word' }
+    : S.cardLink;
 
   return (
     <div style={S.page}>
@@ -309,57 +346,57 @@ function ContactPage({ setRoute }) {
         <div style={gridFinal}>
 
           {/* Columna izquierda: cards */}
-          <div style={S.leftCol}>
+          <div style={leftColFinal}>
 
             {/* Correo */}
-            <div style={S.card}>
-              <div style={S.cardIcon}>
+            <div style={cardFinal}>
+              <div style={cardIconFinal}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="5" width="18" height="14" rx="2"/>
                   <path d="m3 7 9 6 9-6"/>
                 </svg>
               </div>
-              <h3 style={S.cardTitle}>Correo</h3>
-              <p style={S.cardSub}>Información, preguntas, colaboraciones.</p>
-              <a href={`mailto:${CONTACT_EMAIL}`} style={S.cardLink}>{CONTACT_EMAIL}</a>
+              <h3 style={cardTitleFinal}>Correo</h3>
+              <p style={cardSubFinal}>Información, preguntas, colaboraciones.</p>
+              <a href={`mailto:${CONTACT_EMAIL}`} style={cardLinkFinal}>{CONTACT_EMAIL}</a>
             </div>
 
             {/* Teléfono y WhatsApp */}
-            <div style={S.card}>
-              <div style={S.cardIcon}>
+            <div style={cardFinal}>
+              <div style={cardIconFinal}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>
                 </svg>
               </div>
-              <h3 style={S.cardTitle}>Teléfono y WhatsApp</h3>
-              <p style={S.cardSub}>Lun–Vie, 9am–6pm</p>
-              <a href={`https://wa.me/${CONTACT_WHATSAPP}`} target="_blank" rel="noopener noreferrer" style={S.cardLink}>+52 33 1844 0265</a>
+              <h3 style={cardTitleFinal}>Teléfono y WhatsApp</h3>
+              <p style={cardSubFinal}>Lun–Vie, 9am–6pm</p>
+              <a href={`https://wa.me/${CONTACT_WHATSAPP}`} target="_blank" rel="noopener noreferrer" style={cardLinkFinal}>+52 33 1844 0265</a>
             </div>
 
             {/* Instagram */}
-            <div style={S.card}>
-              <div style={S.cardIcon}>
+            <div style={cardFinal}>
+              <div style={cardIconFinal}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="2" width="20" height="20" rx="5"/>
                   <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
                   <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
                 </svg>
               </div>
-              <h3 style={S.cardTitle}>Instagram</h3>
-              <p style={S.cardSub}>Síguenos para nuevos lotes y consejos</p>
-              <a href={`https://instagram.com/${CONTACT_INSTAGRAM}`} target="_blank" rel="noopener noreferrer" style={S.cardLink}>@{CONTACT_INSTAGRAM}</a>
+              <h3 style={cardTitleFinal}>Instagram</h3>
+              <p style={cardSubFinal}>Síguenos para nuevos lotes y consejos</p>
+              <a href={`https://instagram.com/${CONTACT_INSTAGRAM}`} target="_blank" rel="noopener noreferrer" style={cardLinkFinal}>@{CONTACT_INSTAGRAM}</a>
             </div>
 
             {/* Cocina y oficina */}
-            <div style={S.card}>
-              <div style={S.cardIcon}>
+            <div style={cardFinal}>
+              <div style={cardIconFinal}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
                   <circle cx="12" cy="10" r="3"/>
                 </svg>
               </div>
-              <h3 style={S.cardTitle}>Cocina y oficina</h3>
-              <p style={S.cardSub}>
+              <h3 style={cardTitleFinal}>Cocina y oficina</h3>
+              <p style={cardSubFinal}>
                 Av. Topacio 2451<br/>
                 Guadalajara, Jalisco · México
               </p>
