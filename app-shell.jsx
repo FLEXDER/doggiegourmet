@@ -330,7 +330,7 @@ alimentación natural y balanceada. Nuestro objetivo es mejorar la calidad de 
             <CategoryCard num="02" title="Paletas" count={4} img="assets/products/paleta-platano.webp" onClick={() => setRoute('products', 'paletas')} />
             <CategoryCard num="03" title="Perfumes" count={6} img="assets/products/perfume-woof-girl.webp" onClick={() => setRoute('products', 'perfumes')} />
           </div>
-          <CarouselDots targetRef={catGridRef} count={3} autoplayMs={3000} />
+          <CarouselDots targetRef={catGridRef} count={3} autoplayMs={5000} />
         </div>
       </section>
 
@@ -348,7 +348,7 @@ alimentación natural y balanceada. Nuestro objetivo es mejorar la calidad de 
             <div className="why-cell"><div className="ico"><Icon name="snow" /></div><h4>Cadena fría</h4><p>Congelado al instante y enviado a −18 °C para que llegue tal como lo preparamos.</p></div>
             <div className="why-cell"><div className="ico"><Icon name="sparkle" /></div><h4>Lifestyle Premium</h4><p>Desde la cocina hasta el cuidado personal, con el detalle que marca la diferencia.</p></div>
           </div>
-          <CarouselDots targetRef={whyGridRef} count={4} autoplayMs={3000} />
+          <CarouselDots targetRef={whyGridRef} count={4} autoplayMs={5000} />
         </div>
       </section>
 
