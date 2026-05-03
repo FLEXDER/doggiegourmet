@@ -110,6 +110,12 @@ function ProductsPage({ setRoute }) {
 function ProductCard({ p, category }) {
   const imgClass = category === 'perfumes' ? 'product-img tall' : category === 'paletas' ? 'product-img paleta' : 'product-img';
   const tagClass = category === 'barf' ? 'product-tag green' : 'product-tag';
+  const handleAdd = (e) => {
+    e.stopPropagation();
+    if (window.addToCart) {
+      window.addToCart(p);
+    }
+  };
   return (
     <article className="product-card">
       <div className={imgClass}>
@@ -121,8 +127,43 @@ function ProductCard({ p, category }) {
         <p className="product-desc">{protectBarf(p.desc)}</p>
         <div className="product-foot">
           <span className="product-size">{p.size}</span>
-          <button className="product-arrow" aria-label="Detalle"><Icon name="arrow" size={14} /></button>
+          {p.price &&
+            <span style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 22,
+              fontWeight: 600,
+              color: 'var(--green-dark)',
+              letterSpacing: '-0.02em'
+            }}>
+              ${p.price} <span style={{ fontSize: 11, color: 'var(--brown-soft)', fontWeight: 500 }}>MXN</span>
+            </span>
+          }
         </div>
+        <button
+          onClick={handleAdd}
+          style={{
+            marginTop: 14,
+            width: '100%',
+            background: 'var(--green)',
+            color: 'white',
+            border: 'none',
+            padding: '11px 18px',
+            borderRadius: 100,
+            fontFamily: 'inherit',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            transition: 'all 0.15s ease',
+            letterSpacing: '0.01em'
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--green-dark)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--green)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
+          <Icon name="cart" size={14} /> Agregar al carrito
+        </button>
       </div>
     </article>);
 
