@@ -9,8 +9,8 @@
    - PosSuccessView: pantalla de confirmación post-envío
 
    Depende de: window.supabaseClient (sb), Icon, EMAIL,
-              window.INV_PRODUCT_SUGGESTIONS, window.INV_WEB3FORMS_KEY,
-              window.INV_WEB3FORMS_ENDPOINT
+              window.INV_PRODUCT_SUGGESTIONS, window.INV_SUBMIT_REPORT_URL,
+              window.CART_SUPABASE_KEY (compartida desde cart-helpers.js)
    Expone:    window.PinGate, window.PosReportForm
    ============================================================ */
 
@@ -342,52 +342,29 @@ function PosReportForm({ profile, onLogout }) {
       return;
     }
 
-    // 2) Mandar correo de notificación via Web3Forms (no bloqueante si falla)
-    //    Pendiente: migrar a Edge Function (submit-inventory-report) para
-    //    ocultar la WEB3FORMS_KEY del frontend.
+    // 2) Mandar correo de notificación via Edge Function submit-inventory-report
+    //    (la WEB3FORMS_KEY vive en el servidor de Supabase, no en el frontend).
+    //    No bloqueante: si falla el correo, el reporte ya quedó guardado en BD.
     try {
-      const totalUds = itemsToInsert.reduce((a, b) => a + b.requested, 0);
-      const fechaMx = new Date(savedReport.submittedAt).toLocaleString('es-MX', {
-        dateStyle: 'long',
-        timeStyle: 'short'
-      });
-      const productosTxt = itemsToInsert.map(
-        (it, i) =>
-          `${String(i + 1).padStart(2, '0')}. ${it.product} — ${it.requested} uds.${it.notes ? ' (' + it.notes + ')' : ''}`
-      ).join('\n');
-      const message =
-        `REPORTE DE INVENTARIO\n` +
-        `${'─'.repeat(40)}\n\n` +
-        `Punto de venta: ${profile.business}\n` +
-        `Contacto: ${profile.contact}\n` +
-        `Teléfono: ${profile.phone || '—'}\n` +
-        `Ubicación: ${profile.city || '—'}\n` +
-        `Fecha: ${fechaMx}\n` +
-        `ID del reporte: ${savedReport.id}\n\n` +
-        `PRODUCTOS SOLICITADOS (${itemsToInsert.length})\n` +
-        `${'─'.repeat(40)}\n` +
-        `${productosTxt}\n\n` +
-        `Total de unidades solicitadas: ${totalUds}\n`;
-
-      await fetch(window.INV_WEB3FORMS_ENDPOINT, {
+      await fetch(window.INV_SUBMIT_REPORT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: window.CART_SUPABASE_KEY,
+          Authorization: `Bearer ${window.CART_SUPABASE_KEY}`
+        },
         body: JSON.stringify({
-          access_key: window.INV_WEB3FORMS_KEY,
-          subject: `Reporte de inventario · ${profile.business}`,
-          from_name: `Doggie Gourmet · ${profile.business}`,
-          message,
-          negocio: profile.business,
-          contacto: profile.contact,
-          telefono: profile.phone || '',
-          ubicacion: profile.city || '',
-          total_productos: itemsToInsert.length,
-          total_unidades: totalUds,
-          report_id: savedReport.id
+          business: profile.business,
+          contact: profile.contact,
+          phone: profile.phone || '',
+          city: profile.city || '',
+          report_id: savedReport.id,
+          submitted_at: savedReport.submittedAt,
+          items: itemsToInsert
         })
       });
     } catch (err) {
-      console.warn('Web3Forms notification failed (no bloqueante):', err);
+      console.warn('Notificación por correo falló (no bloqueante):', err);
     }
 
     setSubmitted(savedReport);
