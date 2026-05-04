@@ -3,15 +3,13 @@
    Constantes globales del módulo de inventario.
    Se carga PRIMERO de los archivos inv-*.
 
-   NOTA DE SEGURIDAD: WEB3FORMS_KEY está hardcodeada aquí.
-   Pendiente: migrar el envío de notificaciones a una Edge
-   Function (similar a submit-order y submit-contact) para
-   ocultar la key. No es bloqueante: el flujo es interno
-   (POSes reportando inventario), no clientes finales.
+   La WEB3FORMS_KEY se movió a la Edge Function submit-inventory-report
+   (Supabase) para que no quede expuesta en el frontend. El form solo
+   conoce la URL del endpoint, no la access_key.
    ============================================================ */
 
-window.INV_WEB3FORMS_KEY = '242b11d0-38a4-48f3-b031-fa3730aac48d';
-window.INV_WEB3FORMS_ENDPOINT = 'https://api.web3forms.com/submit';
+window.INV_SUBMIT_REPORT_URL =
+  'https://oaurovkvyrywmdsjhgaj.supabase.co/functions/v1/submit-inventory-report';
 
 /**
  * Sugerencias de productos para el datalist del form POS.
