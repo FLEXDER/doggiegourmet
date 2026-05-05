@@ -99,7 +99,7 @@ const PERIODOS = [
 const TIPS = [
   'Esto toma menos de 30 segundos.',
   'Recomendación 100% personalizada.',
-  'Basado en nutrición BARF real.',
+  <>Basado en nutrición <span translate="no">BARF</span> real.</>,
 ];
 
 const TOTAL_STEPS = 6;
@@ -260,7 +260,7 @@ Quiero entrega a domicilio.`;
         {step < TOTAL_STEPS && (
           <header className="calc2-head">
             <div className="calc2-eyebrow"><Icon name="sparkle" size={12}/> &nbsp;Asistente Nutricional</div>
-            <h1 className="calc2-title">Calculadora <em>BARF</em></h1>
+            <h1 className="calc2-title">Calculadora <em translate="no">BARF</em></h1>
             <p className="calc2-sub">{TIPS[step % TIPS.length]}</p>
 
             <div className="calc2-progress">
@@ -996,7 +996,7 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
       }}>
         <strong style={{ color: 'var(--green)' }}>ℹ️ Nota importante:</strong> Las recomendaciones son estimadas con base en
         peso, edad y actividad. Para mascotas con condiciones especiales (sobrepeso, gestación, enfermedades, alergias),
-        consulta a tu veterinario antes de iniciar la dieta BARF.
+        consulta a tu veterinario antes de iniciar la dieta <span translate="no">BARF</span>.
       </div>
     </div>
   );
