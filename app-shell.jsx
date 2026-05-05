@@ -48,7 +48,7 @@ const NAV_ITEMS = [
 { id: 'puntos', label: 'Puntos de venta' },
 { id: 'inventory', label: 'Reporte de Inventario' },
 { id: 'contact', label: 'Contacto' },
-{ id: 'calculator', label: 'Calculadora BARF', cta: true }];
+{ id: 'calculator', label: <>Calculadora <span translate="no">BARF</span></>, cta: true }];
 
 
 function Nav({ route, setRoute }) {
@@ -102,10 +102,10 @@ function Footer({ setRoute }) {
           </div>
           <div>
             <h5>Tienda</h5>
-            <button className="footer-link" onClick={() => setRoute('products', 'barf')}>Alimento BARF</button>
+            <button className="footer-link" onClick={() => setRoute('products', 'barf')}>Alimento <span translate="no">BARF</span></button>
             <button className="footer-link" onClick={() => setRoute('products', 'paletas')}>Paletas</button>
             <button className="footer-link" onClick={() => setRoute('products', 'perfumes')}>Perfumes</button>
-            <button className="footer-link" onClick={() => setRoute('calculator')}>Calculadora BARF</button>
+            <button className="footer-link" onClick={() => setRoute('calculator')}>Calculadora <span translate="no">BARF</span></button>
           </div>
           <div>
             <h5>Negocios</h5>
@@ -125,7 +125,7 @@ function Footer({ setRoute }) {
         </div>
         <div className="footer-bot">
           <span>© 2026 Doggie Gourmet · Hecho con cariño en México</span>
-          <span className="mono">v 4.2 · BARF · PALETAS · PERFUME</span>
+          <span className="mono">v 4.2 · <span translate="no">BARF</span> · PALETAS · PERFUME</span>
         </div>
       </div>
     </footer>);
@@ -248,7 +248,7 @@ function HomePage({ setRoute }) {
             <h1 className="h-display">
               Comida <br /><em>Gourmet y natural</em><br />para tu mascota.
             </h1>
-            <p className="lead" style={{ marginTop: 24 }}>Somos una empresa dedicada a ofrecer alimento congelado para perros basado en la dieta BARF, diseñada para replicar una
+            <p className="lead" style={{ marginTop: 24 }}>Somos una empresa dedicada a ofrecer alimento congelado para perros basado en la dieta <span translate="no">BARF</span>, diseñada para replicar una
 alimentación natural y balanceada. Nuestro objetivo es mejorar la calidad de vida de los perritos a través de una nutrición saludable y personalizada.
             </p>
             <div className="hero-cta-row">
@@ -360,7 +360,7 @@ alimentación natural y balanceada. Nuestro objetivo es mejorar la calidad de 
               <h2 style={{ marginTop: 14 }}>Calcula su porción <em>en 1 minuto</em>.</h2>
               <p>Dinos peso, edad y nivel de actividad. Te decimos cuántas bolsas necesita por quincena, por mes y cuál presentación le queda mejor.</p>
               <button className="btn btn-primary btn-lg" onClick={() => setRoute('calculator')}>
-                Abrir Calculadora BARF <Icon name="arrow" />
+                Abrir Calculadora <span translate="no">BARF</span> <Icon name="arrow" />
               </button>
             </div>
             <div className="banner-mock">
@@ -389,8 +389,8 @@ Te confirmamos y coordinamos la entrega.</p>
             </div>
             <div className="banner-mock" style={{ background: 'var(--cream)', color: 'var(--brown)', border: '1px solid var(--line)' }}>
               <div className="banner-mock-head" style={{ color: 'var(--green)' }}>▮ Reporte de stock · ejemplo</div>
-              <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}>BARF · Original 500g</span><span style={{ color: 'var(--green)' }}>12</span></div>
-              <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}>BARF · Premium 500g</span><span style={{ color: 'var(--green)' }}>8</span></div>
+              <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}><span translate="no">BARF</span> · Original 500g</span><span style={{ color: 'var(--green)' }}>12</span></div>
+              <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}><span translate="no">BARF</span> · Premium 500g</span><span style={{ color: 'var(--green)' }}>8</span></div>
               <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}>Paleta · Plátano</span><span style={{ color: 'var(--green)' }}>20</span></div>
               <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}>Perfume · Bad Pup</span><span style={{ color: 'var(--green)' }}>3</span></div>
             </div>
