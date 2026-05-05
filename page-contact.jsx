@@ -1,524 +1,396 @@
-/* global React, Icon */
-const { useState: uSCC } = React;
+/* global React, PRODUCTS, CATEGORY_ORDER, Icon, EMAIL */
+const { useState: useState2, useMemo: useMemo2 } = React;
 
-// Constantes para llamar a Supabase Edge Function
-const CONTACT_SUPABASE_URL = 'https://oaurovkvyrywmdsjhgaj.supabase.co';
-const CONTACT_SUPABASE_KEY = 'sb_publishable_4ORlrwn6sRWVEQ_XTwiOwQ_wbI0UTwF';
-const CONTACT_WHATSAPP = '523318440265';
-const CONTACT_INSTAGRAM = 'doggie_gourmet';
-const CONTACT_EMAIL = 'doggiegourmetmx@gmail.com';
-
-function ContactPage({ setRoute }) {
-  const [name, setName] = uSCC('');
-  const [email, setEmail] = uSCC('');
-  const [phone, setPhone] = uSCC('');
-  const [business, setBusiness] = uSCC('');
-  const [message, setMessage] = uSCC('');
-  const [sending, setSending] = uSCC(false);
-  const [feedback, setFeedback] = uSCC(null); // { type: 'success' | 'error', text: string }
-
-  const isValid =
-    name.trim().length > 0 &&
-    email.trim().includes('@') &&
-    message.trim().length >= 5;
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!isValid || sending) return;
-
-    setSending(true);
-    setFeedback(null);
-
-    try {
-      const response = await fetch(
-        `${CONTACT_SUPABASE_URL}/functions/v1/submit-contact`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': CONTACT_SUPABASE_KEY,
-            'Authorization': `Bearer ${CONTACT_SUPABASE_KEY}`
-          },
-          body: JSON.stringify({
-            name: name.trim(),
-            email: email.trim(),
-            phone: phone.trim() || null,
-            business: business.trim() || null,
-            message: message.trim()
-          })
-        }
-      );
-
-      if (!response.ok) {
-        const errBody = await response.json().catch(() => ({}));
-        throw new Error(errBody.error || 'Error al enviar el mensaje');
-      }
-
-      const data = await response.json();
-      setFeedback({
-        type: 'success',
-        text: `¡Mensaje recibido! Te responderemos pronto. Ref: #${data.message_number}`
-      });
-      // Limpiar form
-      setName('');
-      setEmail('');
-      setPhone('');
-      setBusiness('');
-      setMessage('');
-    } catch (err) {
-      console.error('Error enviando contacto:', err);
-      setFeedback({
-        type: 'error',
-        text: 'No pudimos enviar tu mensaje. Intenta de nuevo o escríbenos por WhatsApp.'
-      });
-    } finally {
-      setSending(false);
-    }
-  };
-
-  // Estilos inline (no dependemos de styles.css)
-  const S = {
-    page: {
-      background: 'var(--paper, #F8F4E8)',
-      minHeight: '100vh',
-      padding: '80px 0 100px'
-    },
-    container: {
-      maxWidth: 1280,
-      margin: '0 auto',
-      padding: '0 24px'
-    },
-    eyebrow: {
-      fontSize: 12,
-      letterSpacing: '0.18em',
-      fontWeight: 700,
-      color: 'var(--green, #73963C)',
-      marginBottom: 16,
-      textTransform: 'uppercase'
-    },
-    heroGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
-      gap: 60,
-      alignItems: 'start',
-      marginBottom: 60
-    },
-    h1: {
-      fontFamily: '"Bricolage Grotesque", sans-serif',
-      fontSize: 'clamp(40px, 6vw, 72px)',
-      fontWeight: 700,
-      color: 'var(--brown, #4A3B10)',
-      lineHeight: 1.05,
-      margin: 0,
-      letterSpacing: '-0.02em'
-    },
-    h1Em: {
-      fontFamily: '"Instrument Serif", serif',
-      fontStyle: 'italic',
-      fontWeight: 400,
-      color: 'var(--green, #73963C)'
-    },
-    lede: {
-      fontSize: 18,
-      lineHeight: 1.6,
-      color: 'var(--brown, #4A3B10)',
-      opacity: 0.85,
-      marginTop: 24
-    },
-    grid: {
-      display: 'grid',
-      gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.2fr)',
-      gap: 40,
-      alignItems: 'start'
-    },
-    leftCol: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 16
-    },
-    card: {
-      background: 'var(--cream, #F2E9BD)',
-      borderRadius: 24,
-      padding: 32,
-      border: '1px solid rgba(115, 150, 60, 0.15)'
-    },
-    cardIcon: {
-      width: 48,
-      height: 48,
-      borderRadius: 14,
-      background: 'rgba(115, 150, 60, 0.18)',
-      color: 'var(--green-dark, #5C7A2F)',
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 24
-    },
-    cardTitle: {
-      fontFamily: '"Bricolage Grotesque", sans-serif',
-      fontSize: 22,
-      fontWeight: 700,
-      color: 'var(--brown, #4A3B10)',
-      margin: '0 0 8px'
-    },
-    cardSub: {
-      fontSize: 14,
-      color: 'var(--brown, #4A3B10)',
-      opacity: 0.7,
-      lineHeight: 1.5,
-      margin: '0 0 12px'
-    },
-    cardLink: {
-      color: 'var(--green-dark, #5C7A2F)',
-      fontWeight: 600,
-      fontSize: 16,
-      textDecoration: 'none'
-    },
-    formCard: {
-      background: 'var(--cream, #F2E9BD)',
-      borderRadius: 24,
-      padding: 40,
-      border: '1px solid rgba(115, 150, 60, 0.15)'
-    },
-    formTitle: {
-      fontFamily: '"Bricolage Grotesque", sans-serif',
-      fontSize: 28,
-      fontWeight: 700,
-      color: 'var(--brown, #4A3B10)',
-      margin: '0 0 28px'
-    },
-    fieldRow: {
-      marginBottom: 20
-    },
-    labelRow: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 8
-    },
-    label: {
-      fontSize: 11,
-      letterSpacing: '0.15em',
-      fontWeight: 700,
-      color: 'var(--brown, #4A3B10)',
-      textTransform: 'uppercase'
-    },
-    labelHint: {
-      fontSize: 10,
-      letterSpacing: '0.15em',
-      fontWeight: 600,
-      color: 'var(--brown, #4A3B10)',
-      opacity: 0.5,
-      textTransform: 'uppercase'
-    },
-    input: {
-      width: '100%',
-      padding: '14px 18px',
-      borderRadius: 999,
-      background: 'rgba(248, 244, 232, 0.6)',
-      border: '1px solid rgba(115, 150, 60, 0.2)',
-      fontSize: 15,
-      fontFamily: 'inherit',
-      color: 'var(--brown, #4A3B10)',
-      outline: 'none',
-      boxSizing: 'border-box',
-      transition: 'border-color 0.2s ease'
-    },
-    textarea: {
-      width: '100%',
-      padding: '14px 18px',
-      borderRadius: 18,
-      background: 'rgba(248, 244, 232, 0.6)',
-      border: '1px solid rgba(115, 150, 60, 0.2)',
-      fontSize: 15,
-      fontFamily: 'inherit',
-      color: 'var(--brown, #4A3B10)',
-      outline: 'none',
-      boxSizing: 'border-box',
-      minHeight: 120,
-      resize: 'vertical',
-      lineHeight: 1.5,
-      transition: 'border-color 0.2s ease'
-    },
-    submitBtn: {
-      marginTop: 12,
-      padding: '16px 40px',
-      borderRadius: 999,
-      background: 'var(--green, #73963C)',
-      color: '#fff',
-      fontSize: 16,
-      fontWeight: 600,
-      fontFamily: 'inherit',
-      border: 'none',
-      cursor: 'pointer',
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 10,
-      transition: 'all 0.2s ease'
-    },
-    feedbackOk: {
-      marginTop: 16,
-      padding: '14px 18px',
-      borderRadius: 14,
-      background: 'rgba(115, 150, 60, 0.15)',
-      color: 'var(--green-dark, #5C7A2F)',
-      fontSize: 14,
-      fontWeight: 500,
-      border: '1px solid rgba(115, 150, 60, 0.3)'
-    },
-    feedbackErr: {
-      marginTop: 16,
-      padding: '14px 18px',
-      borderRadius: 14,
-      background: 'rgba(190, 80, 60, 0.12)',
-      color: '#7a3329',
-      fontSize: 14,
-      fontWeight: 500,
-      border: '1px solid rgba(190, 80, 60, 0.25)'
-    }
-  };
-
-  // Estilo responsive: detectar si es mobile y reaccionar a cambios de tamaño
-  const [isMobile, setIsMobile] = uSCC(
-    typeof window !== 'undefined' && window.innerWidth < 900
-  );
-
-  React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const onResize = () => setIsMobile(window.innerWidth < 900);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-
-  const heroGridFinal = isMobile
-    ? { ...S.heroGrid, gridTemplateColumns: '1fr', gap: 24 }
-    : S.heroGrid;
-  const gridFinal = isMobile
-    ? { ...S.grid, gridTemplateColumns: '1fr', gap: 24 }
-    : S.grid;
-
-  // En mobile: cards en grid 2x2 (Correo+Teléfono arriba, Instagram+Cocina abajo)
-  // En desktop: stack vertical como antes
-  const leftColFinal = isMobile
-    ? {
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 12
-      }
-    : S.leftCol;
-
-  // En mobile: cards más compactas (menos padding, icono más chico)
-  const cardFinal = isMobile
-    ? { ...S.card, padding: 18, borderRadius: 18 }
-    : S.card;
-  const cardIconFinal = isMobile
-    ? { ...S.cardIcon, width: 38, height: 38, marginBottom: 14, borderRadius: 11 }
-    : S.cardIcon;
-  const cardTitleFinal = isMobile
-    ? { ...S.cardTitle, fontSize: 16, marginBottom: 4 }
-    : S.cardTitle;
-  const cardSubFinal = isMobile
-    ? { ...S.cardSub, fontSize: 12, marginBottom: 8 }
-    : S.cardSub;
-  const cardLinkFinal = isMobile
-    ? { ...S.cardLink, fontSize: 13, wordBreak: 'break-word' }
-    : S.cardLink;
-
-  return (
-    <div style={S.page}>
-      <div style={S.container}>
-
-        {/* Hero */}
-        <div style={heroGridFinal}>
-          <div>
-            <div style={S.eyebrow}>Contacto</div>
-            <h1 style={S.h1}>
-              Estamos <em style={S.h1Em}>para ayudarte.</em>
-            </h1>
-          </div>
-          <div>
-            <p style={S.lede}>
-              Dudas, distribución o solo saludar. Respondemos cada mensaje, normalmente en menos de un día.
-            </p>
-          </div>
-        </div>
-
-        {/* Grid: 4 cards a la izquierda, form a la derecha */}
-        <div style={gridFinal}>
-
-          {/* Columna izquierda: cards */}
-          <div style={leftColFinal}>
-
-            {/* Correo */}
-            <div style={cardFinal}>
-              <div style={cardIconFinal}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="5" width="18" height="14" rx="2"/>
-                  <path d="m3 7 9 6 9-6"/>
-                </svg>
-              </div>
-              <h3 style={cardTitleFinal}>Correo</h3>
-              <p style={cardSubFinal}>Información, preguntas, colaboraciones.</p>
-              <a href={`mailto:${CONTACT_EMAIL}`} style={cardLinkFinal}>{CONTACT_EMAIL}</a>
-            </div>
-
-            {/* Teléfono y WhatsApp */}
-            <div style={cardFinal}>
-              <div style={cardIconFinal}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>
-                </svg>
-              </div>
-              <h3 style={cardTitleFinal}>Teléfono y WhatsApp</h3>
-              <p style={cardSubFinal}>Lun–Vie, 9am–6pm</p>
-              <a href={`https://wa.me/${CONTACT_WHATSAPP}`} target="_blank" rel="noopener noreferrer" style={cardLinkFinal}>+52 33 1844 0265</a>
-            </div>
-
-            {/* Instagram */}
-            <div style={cardFinal}>
-              <div style={cardIconFinal}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="2" width="20" height="20" rx="5"/>
-                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-                </svg>
-              </div>
-              <h3 style={cardTitleFinal}>Instagram</h3>
-              <p style={cardSubFinal}>Síguenos para nuevos lotes y consejos</p>
-              <a href={`https://instagram.com/${CONTACT_INSTAGRAM}`} target="_blank" rel="noopener noreferrer" style={cardLinkFinal}>@{CONTACT_INSTAGRAM}</a>
-            </div>
-
-            {/* Cocina y oficina */}
-            <div style={cardFinal}>
-              <div style={cardIconFinal}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                  <circle cx="12" cy="10" r="3"/>
-                </svg>
-              </div>
-              <h3 style={cardTitleFinal}>Cocina y oficina</h3>
-              <p style={cardSubFinal}>
-                Av. Topacio 2451<br/>
-                Guadalajara, Jalisco · México
-              </p>
-            </div>
-
-          </div>
-
-          {/* Columna derecha: form */}
-          <div style={S.formCard}>
-            <h2 style={S.formTitle}>Envíanos un mensaje</h2>
-
-            <form onSubmit={handleSubmit}>
-
-              <div style={S.fieldRow}>
-                <div style={S.labelRow}>
-                  <span style={S.label}>Tu nombre</span>
-                  <span style={S.labelHint}>Requerido</span>
-                </div>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Juan Pérez"
-                  style={S.input}
-                  maxLength={200}
-                  required
-                />
-              </div>
-
-              <div style={S.fieldRow}>
-                <div style={S.labelRow}>
-                  <span style={S.label}>Correo</span>
-                  <span style={S.labelHint}>Requerido</span>
-                </div>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="tu@correo.com"
-                  style={S.input}
-                  maxLength={200}
-                  required
-                />
-              </div>
-
-              <div style={S.fieldRow}>
-                <div style={S.labelRow}>
-                  <span style={S.label}>Teléfono</span>
-                  <span style={S.labelHint}>Opcional</span>
-                </div>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="33 1234 5678"
-                  style={S.input}
-                  maxLength={50}
-                />
-              </div>
-
-              <div style={S.fieldRow}>
-                <div style={S.labelRow}>
-                  <span style={S.label}>Negocio</span>
-                  <span style={S.labelHint}>Opcional</span>
-                </div>
-                <input
-                  type="text"
-                  value={business}
-                  onChange={(e) => setBusiness(e.target.value)}
-                  placeholder="VetCare Guadalajara"
-                  style={S.input}
-                  maxLength={200}
-                />
-              </div>
-
-              <div style={S.fieldRow}>
-                <div style={S.labelRow}>
-                  <span style={S.label}>Mensaje</span>
-                  <span style={S.labelHint}>Requerido</span>
-                </div>
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Cuéntanos cómo te podemos ayudar..."
-                  style={S.textarea}
-                  maxLength={2000}
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={!isValid || sending}
-                style={{
-                  ...S.submitBtn,
-                  opacity: (!isValid || sending) ? 0.5 : 1,
-                  cursor: (!isValid || sending) ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {sending ? 'Enviando...' : 'Enviar mensaje'}
-                {!sending && (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="5" y1="12" x2="19" y2="12"/>
-                    <polyline points="12 5 19 12 12 19"/>
-                  </svg>
-                )}
-              </button>
-
-              {feedback && (
-                <div style={feedback.type === 'success' ? S.feedbackOk : S.feedbackErr}>
-                  {feedback.text}
-                </div>
-              )}
-
-            </form>
-          </div>
-
-        </div>
-
-      </div>
-    </div>
+/* Helper: envuelve cualquier ocurrencia de "BARF" en un texto con
+   <span translate="no"> para evitar que Chrome lo traduzca a "Vómito". */
+function protectBarf(text) {
+  if (!text || typeof text !== 'string' || text.indexOf('BARF') === -1) return text;
+  const parts = text.split(/(BARF)/g);
+  return parts.map((part, i) =>
+    part === 'BARF' ? <span key={i} translate="no">BARF</span> : part
   );
 }
 
-window.ContactPage = ContactPage;
+function ProductsPage({ setRoute }) {
+  const [active, setActive] = useState2('all');
+  const cats = CATEGORY_ORDER;
+
+  const labels = { barf: 'BARF', paletas: 'Paletas', perfumes: 'Perfumes' };
+
+  React.useEffect(() => {
+    const pending = window.__pendingCat;
+    if (pending && cats.includes(pending)) {
+      setActive(pending);
+      window.__pendingCat = null;
+      // scroll after layout
+      setTimeout(() => {
+        const el = document.getElementById(`cat-${pending}`);
+        if (el) {
+          const navOffset = 88;
+          const top = el.getBoundingClientRect().top + window.scrollY - navOffset;
+          window.scrollTo({ top, behavior: 'smooth' });
+        }
+      }, 120);
+    }
+  }, []);
+
+  return (
+    <>
+      <div className="page-head">
+        <div className="container">
+          <div className="page-head-grid">
+            <div>
+              <div className="eyebrow">Catálogo · 15 SKUs</div>
+              <h1 className="h-display" style={{ fontSize: 'clamp(36px, 5vw, 64px)', marginTop: 12 }}>
+                Productos gourmet <em>buenos chicos</em>.
+              </h1>
+            </div>
+            <p className="lead">Tenemos diferentes productos pensados y diseñados en los diferentes tipos de mascota y necesidades de cada una de ellas. Desde su comida, su snack y hasta el perfume para antes de que llegue visita.
+
+            </p>
+          </div>
+          <div className="cat-tabs">
+            <button className={`cat-tab ${active === 'all' ? 'active' : ''}`} onClick={() => setActive('all')}>
+              Todo <span className="cat-tab-count">15</span>
+            </button>
+            {cats.map((id) =>
+            <button key={id} className={`cat-tab ${active === id ? 'active' : ''}`} onClick={() => setActive(id)}>
+                <span translate="no">{labels[id]}</span> <span className="cat-tab-count">{PRODUCTS[id].items.length}</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="container">
+        {cats.filter((id) => active === 'all' || active === id).map((id, idx) => {
+          const cat = PRODUCTS[id];
+          return (
+            <section key={id} id={`cat-${id}`} className="cat-section" style={{ scrollMarginTop: 88 }}>
+              <div className="cat-section-head">
+                <div>
+                  <div className="num">0{idx + 1} · <span translate="no">{labels[id].toUpperCase()}</span></div>
+                  <h3>{id === 'barf' ? <>Alimento <em translate="no">BARF</em></> : id === 'paletas' ? <>Paletas <em>Congeladas</em></> : <>Perfumes <em>para Mascotas</em></>}</h3>
+                </div>
+                <p>{cat.title}.<br />{cat.desc}</p>
+              </div>
+              <div className="product-grid">
+                {cat.items.map((p) => <ProductCard key={p.id} p={p} category={id} />)}
+              </div>
+            </section>);
+
+        })}
+      </div>
+
+      <section className="section">
+        <div className="container">
+          <div className="banner-inv" style={{ backgroundColor: "rgb(92, 122, 47)" }}>
+            <div>
+              <div className="eyebrow" style={{ color: 'var(--green-soft)' }}>¿Ya eres punto de venta?</div>
+              <h2 style={{ marginTop: 14 }}>Olvídate del correo — <em>reporta tu inventario</em>.</h2>
+              <p>Usa la herramienta de inventario para decirnos qué te queda en anaquel. Resurtidos más rápidos, menos llamadas.</p>
+              <button className="btn btn-primary btn-lg" onClick={() => setRoute('inventory')}>
+                Abrir herramienta <Icon name="arrow" />
+              </button>
+            </div>
+            <div className="banner-mock">
+              <div className="banner-mock-head">▮ Reporte · ejemplo</div>
+              <div className="banner-mock-row"><span><span translate="no">BARF</span> · Original 500g</span><span>12</span></div>
+              <div className="banner-mock-row"><span><span translate="no">BARF</span> · Premium 500g</span><span>8</span></div>
+              <div className="banner-mock-row"><span>Paleta · Plátano</span><span>20</span></div>
+              <div className="banner-mock-row"><span>Perfume · Pawer Bomb</span><span>5</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </>);
+
+}
+
+function ProductCard({ p, category }) {
+  const imgClass = category === 'perfumes' ? 'product-img tall' : category === 'paletas' ? 'product-img paleta' : 'product-img';
+  const tagClass = category === 'barf' ? 'product-tag green' : 'product-tag';
+
+  // Cantidad actual en el carrito (se mantiene sincronizada vía evento global 'cart-changed')
+  const [cartQty, setCartQty] = React.useState(0);
+  React.useEffect(() => {
+    const update = () => {
+      const items = window.cartStore ? window.cartStore.getItems() : [];
+      const found = items.find((it) => it.id === p.id);
+      setCartQty(found ? found.quantity : 0);
+    };
+    update();
+    window.addEventListener('cart-changed', update);
+    return () => window.removeEventListener('cart-changed', update);
+  }, [p.id]);
+
+  const handleAdd = (e) => {
+    e.stopPropagation();
+    if (window.addToCart) window.addToCart(p);
+  };
+  const handleInc = (e) => {
+    e.stopPropagation();
+    if (window.cartStore) window.cartStore.increment(p.id);
+  };
+  const handleDec = (e) => {
+    e.stopPropagation();
+    if (window.cartStore) window.cartStore.decrement(p.id);
+  };
+
+  return (
+    <article className="product-card">
+      <div className={imgClass}>
+        <span className={tagClass}>{p.tag}</span>
+        <img src={p.img} alt={p.name} />
+      </div>
+      <div className="product-body">
+        <div className="product-name">{p.name}</div>
+        <p className="product-desc">{protectBarf(p.desc)}</p>
+        <div className="product-foot">
+          <span className="product-size">{p.size}</span>
+          {p.price &&
+            <span style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 22,
+              fontWeight: 600,
+              color: 'var(--green-dark)',
+              letterSpacing: '-0.02em'
+            }}>
+              ${p.price} <span style={{ fontSize: 11, color: 'var(--brown-soft)', fontWeight: 500 }}>MXN</span>
+            </span>
+          }
+        </div>
+        {cartQty === 0 ?
+          <button
+            onClick={handleAdd}
+            style={{
+              marginTop: 14,
+              width: '100%',
+              background: 'var(--green)',
+              color: 'white',
+              border: 'none',
+              padding: '11px 18px',
+              borderRadius: 100,
+              fontFamily: 'inherit',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              transition: 'all 0.15s ease',
+              letterSpacing: '0.01em'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--green-dark)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--green)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
+            <Icon name="cart" size={14} /> Agregar al carrito
+          </button> :
+
+          <div style={{
+            marginTop: 14,
+            width: '100%',
+            background: 'var(--green)',
+            color: 'white',
+            borderRadius: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '4px',
+            transition: 'all 0.15s ease'
+          }}>
+            <button
+              onClick={handleDec}
+              aria-label="Quitar uno"
+              style={{
+                background: 'rgba(255,255,255,0.18)',
+                border: 'none',
+                width: 36,
+                height: 36,
+                borderRadius: 100,
+                color: 'white',
+                fontSize: 18,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background 0.15s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.3)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.18)'; }}>
+              −
+            </button>
+            <div style={{
+              flex: 1,
+              textAlign: 'center',
+              fontSize: 13,
+              fontWeight: 600,
+              letterSpacing: '0.02em'
+            }}>
+              {cartQty} en el carrito
+            </div>
+            <button
+              onClick={handleInc}
+              aria-label="Agregar uno"
+              style={{
+                background: 'rgba(255,255,255,0.18)',
+                border: 'none',
+                width: 36,
+                height: 36,
+                borderRadius: 100,
+                color: 'white',
+                fontSize: 18,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background 0.15s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.3)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.18)'; }}>
+              +
+            </button>
+          </div>
+        }
+      </div>
+    </article>);
+
+}
+
+function AboutPage({ setRoute }) {
+  return (
+    <>
+      <div className="page-head">
+        <div className="container">
+          <div className="page-head-grid">
+            <div>
+              <div className="eyebrow">Nosotros</div>
+              <h1 className="h-display" style={{ fontSize: 'clamp(36px, 5vw, 64px)', marginTop: 12 }}>
+                Comida real <em>para quienes más quieres</em>.
+              </h1>
+            </div>
+            <p className="lead">Doggie Gourmet nació en una pequeña cocina en Guadalajara en 2022. Todo empezó con una decisión: alimentar mejor a quienes más queremos.
+
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="container">
+        <div className="about-hero">
+          <div>
+            <div className="eyebrow">Nuestra promesa</div>
+            <h2 className="h-section" style={{ marginTop: 12 }}>Comida <em>que reconoces</em>. Cariño <em>que merecen</em>.</h2>
+            <p className="lead" style={{ marginTop: 20 }}>Cada receta se diseña junto a nutriólogos veterinarios, se prepara en lotes pequeños y se congela el mismo día. Sin conservadores. Solo ingredientes reales en las proporciones correctas.
+
+            </p>
+            <p className="lead" style={{ marginTop: 14 }}>
+              Vendemos exclusivamente a través de veterinarias y pet shops porque queremos que la comida sea recomendada, no solo comprada.
+            </p>
+          </div>
+          <div
+            className="about-img-block about-img-photo"
+            role="img"
+            aria-label="Carne fresca preparada para alimentación cruda natural"
+            style={{
+              backgroundImage: "url('assets/about/transicion-barf.jpg')",
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              backgroundColor: 'transparent'
+            }}>
+          </div>
+        </div>
+      </div>
+
+      <section className="section section-tight">
+        <div className="container">
+          <div className="section-head">
+            <div>
+              <div className="eyebrow">Valores</div>
+              <h2 className="h-section" style={{ marginTop: 12 }}>Tres cosas, <em>no negociables</em>.</h2>
+            </div>
+          </div>
+          <div className="about-values">
+            <div className="about-value">
+              <div className="num">VAL · 01</div>
+              <h4>Ingredientes <em>reales, siempre</em></h4>
+              <p>Si el ingrediente no nos lo comeríamos nosotros, no entra. Carnes de origen único. Verduras reales. Cero subproductos.</p>
+            </div>
+            <div className="about-value">
+              <div className="num">VAL · 02</div>
+              <h4>Lento, <em>a mano</em></h4>
+              <p>Lotes pequeños, todos los días. Congelamos en horas para que abras lo mismo que preparamos.</p>
+            </div>
+            <div className="about-value">
+              <div className="num">VAL · 03</div>
+              <h4>Honesto, <em>sin excepciones</em>.</h4>
+              <p>Si un lote sale corto, te avisamos. Si una receta cambia, te decimos. La salud de tu mascota se toma en serio.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section section-tight">
+        <div className="container">
+          <div className="section-head">
+            <div>
+              <div className="eyebrow">Proceso</div>
+              <h2 className="h-section" style={{ marginTop: 12 }}>De la <em>cocina</em> al plato.</h2>
+            </div>
+          </div>
+          <div className="about-process">
+            <div className="process-step">
+              <div className="step">PASO · 01</div>
+              <h5>Origen</h5>
+              <p>Carnes y verduras locales, entregadas a diario por proveedores que conocemos por nombre.</p>
+            </div>
+            <div className="process-step">
+              <div className="step">PASO · 02</div>
+              <h5>Formulación</h5>
+              <p>Recetas balanceadas por nutriólogos veterinarios según etapa de vida y tamaño.</p>
+            </div>
+            <div className="process-step">
+              <div className="step">PASO · 03</div>
+              <h5>Porcionado</h5>
+              <p>Porcionado a mano la misma mañana en empaques resellables grado alimenticio.</p>
+            </div>
+            <div className="process-step">
+              <div className="step">PASO · 04</div>
+              <h5>Congelado y envío</h5>
+              <p>Congelado a −18 °C, enviado en cadena fría a veterinarias y pet shops del país.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section section-tight">
+        <div className="container">
+          <div className="banner-inv" style={{ backgroundColor: "rgb(92, 122, 47)" }}>
+            <div>
+              <div className="eyebrow" style={{ color: 'var(--green-soft)' }}>Vende nuestra línea</div>
+              <h2 style={{ marginTop: 14 }}>Sé un <em>punto de venta</em>.</h2>
+              <p>Trabajamos con veterinarias, pet shops y distribuidores que se preocupan por lo que recomiendan. Cuéntanos sobre tu negocio y te respondemos en 48 horas.</p>
+              <button className="btn btn-primary btn-lg" onClick={() => setRoute('contact')}>
+                Contáctanos <Icon name="arrow" />
+              </button>
+            </div>
+            <div className="banner-mock">
+              <div className="banner-mock-head">▮ Programa de distribuidores</div>
+              <div className="banner-mock-row"><span>Margen mayorista</span><span>hasta 38%</span></div>
+              <div className="banner-mock-row"><span>Pedido mínimo</span><span>20 unidades</span></div>
+              <div className="banner-mock-row"><span>Frecuencia de resurtido</span><span>semanal</span></div>
+              <div className="banner-mock-row"><span>Kit de marketing</span><span>incluido</span></div>
+              <div className="banner-mock-row"><span>Onboarding</span><span>48h</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </>);
+
+}
+
+window.ProductsPage = ProductsPage;
+window.AboutPage = AboutPage;
