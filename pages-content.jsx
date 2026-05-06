@@ -293,7 +293,7 @@ function AboutPage({ setRoute }) {
           <div
             className="about-img-block about-img-photo"
             role="img"
-            aria-label="Carne fresca preparada para alimentación BARF"
+            aria-label="Carne fresca preparada para alimentación cruda natural"
             style={{
               backgroundImage: "url('assets/about/transicion-barf.jpg')",
               backgroundSize: 'cover',
