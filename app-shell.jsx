@@ -389,8 +389,8 @@ Te confirmamos y coordinamos la entrega.</p>
             </div>
             <div className="banner-mock" style={{ background: 'var(--cream)', color: 'var(--brown)', border: '1px solid var(--line)' }}>
               <div className="banner-mock-head" style={{ color: 'var(--green)' }}>▮ Reporte de stock · ejemplo</div>
-              <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}><span translate="no">BARF</span> · Original 500g</span><span style={{ color: 'var(--green)' }}>12</span></div>
-              <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}><span translate="no">BARF</span> · Premium 500g</span><span style={{ color: 'var(--green)' }}>8</span></div>
+              <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}><span translate="no" style={{ color: 'var(--green-dark)', fontWeight: 700 }}>BARF</span> · Original 500g</span><span style={{ color: 'var(--green)' }}>12</span></div>
+              <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}><span translate="no" style={{ color: 'var(--green-dark)', fontWeight: 700 }}>BARF</span> · Premium 500g</span><span style={{ color: 'var(--green)' }}>8</span></div>
               <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}>Paleta · Plátano</span><span style={{ color: 'var(--green)' }}>20</span></div>
               <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}>Perfume · Bad Pup</span><span style={{ color: 'var(--green)' }}>3</span></div>
             </div>
