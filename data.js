@@ -99,6 +99,7 @@ window.BREEDS = [
   'Pomerania',
   'Pug',
   'Rottweiler',
+  'Salchicha (Dachshund)',
   'Samoyedo',
   'San Bernardo',
   'Schnauzer',
