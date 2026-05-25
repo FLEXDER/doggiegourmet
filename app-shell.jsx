@@ -261,7 +261,7 @@ function HomePage({ setRoute }) {
           <div>
             <div className="hero-eyebrow-row">
               <div className="dot" />
-              <span>Calcula tu dieta · Disponible en 3 puntos de venta</span>
+              <span>Calcula tu dieta · Disponible en {(window.LOCATIONS && window.LOCATIONS.length) || 7} puntos de venta</span>
             </div>
             <h1 className="h-display">
               Comida <br /><em>Gourmet y natural</em><br />para tu mascota.
