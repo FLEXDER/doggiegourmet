@@ -2372,3 +2372,174 @@ textarea.field-input { min-height: 130px; padding: 14px 16px; resize: vertical; 
   /* Strip: que no se vea tan grande */
   .strip { padding: 14px 0; font-size: 13px; }
 }
+
+/* ============================================================
+   QUICK-ADD CHIPS (POS report form)
+   Permite seleccionar productos por categoría sin escribir.
+   ============================================================ */
+.inv2-quickadd {
+  margin-bottom: 18px;
+  padding: 14px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.inv2-quickadd-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brown-soft);
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.inv2-quickadd-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.inv2-quickadd-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--brown);
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-family: inherit;
+}
+.inv2-quickadd-chip:hover {
+  border-color: var(--green);
+  color: var(--green-dark);
+}
+.inv2-quickadd-chip.active {
+  background: var(--green);
+  color: white;
+  border-color: var(--green);
+}
+.inv2-quickadd-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(74, 59, 16, 0.08);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+.inv2-quickadd-chip.active .inv2-quickadd-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+.inv2-quickadd-panel {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+  animation: quickAddFade 0.22s ease;
+}
+@keyframes quickAddFade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.inv2-quickadd-product {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  color: var(--brown);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  font-family: inherit;
+}
+.inv2-quickadd-product:hover {
+  border-color: var(--green);
+  background: var(--green-soft);
+  color: var(--green-dark);
+}
+.inv2-quickadd-product .plus {
+  display: inline-grid;
+  place-items: center;
+  width: 22px; height: 22px;
+  border-radius: 999px;
+  background: var(--green-soft);
+  color: var(--green-dark);
+  font-weight: 700; font-size: 14px; line-height: 1;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.inv2-quickadd-product:hover .plus {
+  background: var(--green);
+  color: white;
+}
+@media (max-width: 600px) {
+  .inv2-quickadd-panel { grid-template-columns: 1fr; gap: 6px; }
+  .inv2-quickadd-product { padding: 13px 14px; font-size: 14px; }
+  .inv2-quickadd-chip { padding: 11px 16px; font-size: 14px; }
+}
+
+/* ============================================================
+   MOBILE ENHANCEMENTS — Inventory POS flow
+   Sticky submit bar + hero compacto + pin gate slim
+   ============================================================ */
+@media (max-width: 720px) {
+  /* Hero del POS más compacto: el usuario ya sabe dónde está, ahorrar pantalla */
+  .inv2-hero { padding: 22px 0 16px; }
+  .inv2-hero-row { gap: 12px; }
+  .inv2-hero-eyebrow {
+    font-size: 10px;
+    padding: 6px 10px;
+    margin-bottom: 8px;
+  }
+  .inv2-hero-title {
+    font-size: 24px;
+    line-height: 1.1;
+    margin-bottom: 0;
+  }
+  .inv2-hero-sub { display: none; }
+
+  /* Submit bar sticky al bottom — el botón siempre accesible sin scroll */
+  .inv2-submit-bar {
+    position: sticky;
+    bottom: 0;
+    margin: 16px -20px 0;
+    border-radius: var(--r-md) var(--r-md) 0 0;
+    padding: 14px 20px;
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+    z-index: 20;
+    box-shadow: 0 -10px 24px -8px rgba(74, 59, 16, 0.22);
+    gap: 12px;
+  }
+  .inv2-submit-bar .btn-primary {
+    width: 100%;
+    justify-content: center;
+    padding: 14px 20px;
+  }
+  .inv2-submit-info { font-size: 12px; gap: 2px; }
+  .inv2-submit-info strong { font-size: 15px; }
+}
+
+@media (max-width: 760px) {
+  /* PIN gate slim: ocultar los pasos 01/02/03 en mobile (es onboarding que
+     estorba al usuario recurrente). Solo dejamos el párrafo con contacto. */
+  .pin-gate-aside-list { display: none; }
+  .pin-gate-aside { padding: 28px 28px; }
+  .pin-gate-aside p { font-size: 13px; line-height: 1.55; margin-top: 0; }
+  .pin-gate-aside-eyebrow { margin-bottom: 10px; }
+}
