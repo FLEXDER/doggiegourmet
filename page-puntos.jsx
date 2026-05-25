@@ -1,5 +1,5 @@
 /* global React */
-const { useMemo: useMemoP } = React;
+const { useMemo: useMemoP, useState: useStateP, useEffect: useEffectP, useRef: useRefP } = React;
 
 const LOCATIONS = [
   {
@@ -145,10 +145,10 @@ function StarRow({ rating }) {
   return <span className="puntos-stars">{stars}</span>;
 }
 
-function LocationCard({ loc }) {
+function LocationCard({ loc, index }) {
   const directions = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(loc.address + ', ' + loc.city)}`;
   return (
-    <article className={`puntos-card ${loc.featured ? 'is-featured' : ''}`}>
+    <article className={`puntos-card ${loc.featured ? 'is-featured' : ''}`} data-index={index}>
       {loc.featured && <span className="puntos-badge">Catálogo completo</span>}
       <div
         className="puntos-card-img"
@@ -203,6 +203,38 @@ function PuntosVentaPage({ setRoute }) {
     cities: new Set(LOCATIONS.map(l => l.city.split(',')[1].trim())).size,
   }), []);
 
+  // Tracking del slide activo para los dots del carrusel mobile.
+  // Usa IntersectionObserver sobre el grid container; el card que ocupa
+  // más del 60% del viewport horizontal se considera activo.
+  const gridRef = useRefP(null);
+  const [activeIdx, setActiveIdx] = useStateP(0);
+
+  useEffectP(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+    // Solo activamos el observer en mobile (los dots solo se muestran <720px).
+    // En desktop el grid es estático y no aplica.
+    if (window.matchMedia('(min-width: 721px)').matches) return;
+
+    const cards = grid.querySelectorAll('.puntos-card');
+    if (!cards.length) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+          const idx = parseInt(entry.target.dataset.index, 10);
+          if (!isNaN(idx)) setActiveIdx(idx);
+        }
+      });
+    }, {
+      root: grid,
+      threshold: [0.6]
+    });
+
+    cards.forEach((card) => observer.observe(card));
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="puntos-page">
       {/* Hero */}
@@ -238,11 +270,21 @@ function PuntosVentaPage({ setRoute }) {
         </div>
       </section>
 
-      {/* Cards grid */}
+      {/* Cards grid + dots */}
       <section className="puntos-grid-section">
         <div className="container">
-          <div className="puntos-grid">
-            {LOCATIONS.map((loc) => <LocationCard key={loc.id} loc={loc}/>)}
+          <div className="puntos-grid" ref={gridRef}>
+            {LOCATIONS.map((loc, idx) => <LocationCard key={loc.id} loc={loc} index={idx}/>)}
+          </div>
+          <div className="puntos-dots" role="tablist" aria-label="Indicador de slide">
+            {LOCATIONS.map((_, idx) => (
+              <span
+                key={idx}
+                className={`puntos-dot ${idx === activeIdx ? 'active' : ''}`}
+                role="tab"
+                aria-selected={idx === activeIdx}
+              />
+            ))}
           </div>
         </div>
       </section>
