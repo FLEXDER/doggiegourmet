@@ -2614,3 +2614,39 @@ textarea.field-input { min-height: 130px; padding: 14px 16px; resize: vertical; 
 @media (max-width: 720px) {
   .inv2-qty-btn { width: 52px; font-size: 24px; }
 }
+
+/* ============================================================
+   PUNTOS DE VENTA — Mobile: ocultar meta + dots indicador
+   El meta (disponibilidad / dirección / teléfono) hacía overlap
+   y agregaba mucho vertical innecesario. En mobile se elimina
+   y los detalles se acceden vía botón "Ver en Google Maps".
+   ============================================================ */
+.puntos-dots {
+  display: none; /* Solo visible en mobile via media query abajo */
+}
+
+@media (max-width: 720px) {
+  /* Ocultar el bloque completo de metadata (disponibilidad/dirección/teléfono) */
+  .puntos-card-meta { display: none; }
+
+  /* Dots indicador del slide activo */
+  .puntos-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin-top: 18px;
+    padding: 0 20px;
+  }
+  .puntos-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: rgba(74, 59, 16, 0.18);
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .puntos-dot.active {
+    background: var(--green);
+    width: 22px;
+  }
+}
