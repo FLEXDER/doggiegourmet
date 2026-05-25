@@ -2133,6 +2133,31 @@ textarea.field-input { min-height: 130px; padding: 14px 16px; resize: vertical; 
   .puntos-card-body { padding: 20px 20px 22px; }
   .puntos-meta-row { grid-template-columns: 90px 1fr; gap: 10px; }
   .puntos-actions { flex-direction: column; }
+
+  /* Carrusel horizontal con scroll-snap (mismo patrón que las categorías en home) */
+  .puntos-grid {
+    display: flex;
+    flex-direction: row;
+    grid-template-columns: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    gap: 14px;
+    margin: 0 -20px;
+    padding: 8px 20px 24px;
+    scrollbar-width: none;
+  }
+  .puntos-grid::-webkit-scrollbar { display: none; }
+  .puntos-card {
+    flex: 0 0 85vw;
+    max-width: 340px;
+    min-width: 280px;
+    scroll-snap-align: start;
+  }
+  .puntos-card:last-child {
+    scroll-snap-align: end;
+  }
   .puntos-closing { padding: 56px 0 72px; }
 }
 
