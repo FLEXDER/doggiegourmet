@@ -511,13 +511,30 @@ function PosReportForm({ profile, onLogout }) {
                         onChange={(e) => updateRow(row.id, 'product', e.target.value)} />
                     </div>
                     <div className="inv2-prow-cell" data-lbl="Cantidad solicitada">
-                      <input
-                        type="number"
-                        min="0"
-                        className="inv2-input inv2-input-num"
-                        placeholder="0"
-                        value={row.requested}
-                        onChange={(e) => updateRow(row.id, 'requested', e.target.value)} />
+                      <div className="inv2-qty-stepper">
+                        <button
+                          type="button"
+                          className="inv2-qty-btn"
+                          onClick={() => updateRow(row.id, 'requested', String(Math.max(0, (Number(row.requested) || 0) - 1)))}
+                          aria-label="Disminuir cantidad">
+                          −
+                        </button>
+                        <input
+                          type="number"
+                          min="0"
+                          inputMode="numeric"
+                          className="inv2-input inv2-input-num"
+                          placeholder="0"
+                          value={row.requested}
+                          onChange={(e) => updateRow(row.id, 'requested', e.target.value)} />
+                        <button
+                          type="button"
+                          className="inv2-qty-btn"
+                          onClick={() => updateRow(row.id, 'requested', String((Number(row.requested) || 0) + 1))}
+                          aria-label="Aumentar cantidad">
+                          +
+                        </button>
+                      </div>
                     </div>
                     <div className="inv2-prow-cell" data-lbl="Notas">
                       <input
