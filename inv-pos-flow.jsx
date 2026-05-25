@@ -268,6 +268,7 @@ function PosReportForm({ profile, onLogout }) {
   const [submitted, setSubmitted] = useSPos(null);
   const [sending, setSending] = useSPos(false);
   const [sendError, setSendError] = useSPos('');
+  const [activeCategory, setActiveCategory] = useSPos(null);
 
   const updateRow = (id, key, val) => {
     setRows((r) => r.map((row) => row.id === id ? { ...row, [key]: val } : row));
@@ -280,6 +281,26 @@ function PosReportForm({ profile, onLogout }) {
   };
   const removeRow = (id) => {
     setRows((r) => r.length === 1 ? r : r.filter((row) => row.id !== id));
+  };
+
+  // Quick-add desde chip: si la última row está vacía, la rellena; si no, crea una nueva.
+  // Evita que se agreguen filas vacías cuando el usuario apenas entra al form.
+  const addFromQuickPick = (productName) => {
+    setRows((r) => {
+      const last = r[r.length - 1];
+      if (last && !last.product.trim() && !last.requested) {
+        return r.map((row, i) => i === r.length - 1 ? { ...row, product: productName } : row);
+      }
+      return [
+        ...r,
+        {
+          id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+          product: productName,
+          requested: '',
+          notes: ''
+        }
+      ];
+    });
   };
 
   const validRows = useMPos(
@@ -432,6 +453,39 @@ function PosReportForm({ profile, onLogout }) {
             </header>
 
             <div className="inv2-card-body">
+              {/* Quick-add por categoría: chips arriba del input para selección rápida sin escribir */}
+              {window.INV_PRODUCT_CATEGORIES && (
+                <div className="inv2-quickadd">
+                  <div className="inv2-quickadd-label">Selecciona rápido por categoría</div>
+                  <div className="inv2-quickadd-chips">
+                    {Object.entries(window.INV_PRODUCT_CATEGORIES).map(([id, cat]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        className={`inv2-quickadd-chip ${activeCategory === id ? 'active' : ''}`}
+                        onClick={() => setActiveCategory(activeCategory === id ? null : id)}>
+                        <span>{cat.label}</span>
+                        <span className="inv2-quickadd-count">{cat.products.length}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {activeCategory && (
+                    <div className="inv2-quickadd-panel">
+                      {window.INV_PRODUCT_CATEGORIES[activeCategory].products.map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          className="inv2-quickadd-product"
+                          onClick={() => addFromQuickPick(p)}>
+                          <span>{p}</span>
+                          <span className="plus">+</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <datalist id="dg-product-suggestions">
                 {window.INV_PRODUCT_SUGGESTIONS.map((p) => <option key={p} value={p} />)}
               </datalist>
