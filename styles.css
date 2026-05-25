@@ -2543,3 +2543,74 @@ textarea.field-input { min-height: 130px; padding: 14px 16px; resize: vertical; 
   .pin-gate-aside p { font-size: 13px; line-height: 1.55; margin-top: 0; }
   .pin-gate-aside-eyebrow { margin-bottom: 10px; }
 }
+
+/* ============================================================
+   STEPPER +/- para cantidad solicitada (POS form)
+   Híbrido: botones para taps rápidos + input editable para
+   cantidades grandes. Optimizado para uso en mobile.
+   ============================================================ */
+.inv2-qty-stepper {
+  display: flex;
+  align-items: stretch;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--paper);
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.inv2-qty-stepper:focus-within {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(115, 150, 60, 0.10);
+}
+.inv2-qty-stepper .inv2-input {
+  border: none;
+  background: transparent;
+  padding: 10px 4px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+}
+.inv2-qty-stepper .inv2-input:focus {
+  outline: none;
+  box-shadow: none;
+}
+/* Ocultar spinners nativos (los nuestros son mejores) */
+.inv2-qty-stepper .inv2-input::-webkit-outer-spin-button,
+.inv2-qty-stepper .inv2-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.inv2-qty-stepper .inv2-input[type="number"] {
+  -moz-appearance: textfield;
+}
+.inv2-qty-btn {
+  width: 44px;
+  display: grid;
+  place-items: center;
+  background: var(--cream);
+  color: var(--brown);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  border: none;
+  transition: all 0.12s ease;
+  font-family: inherit;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.inv2-qty-btn:hover {
+  background: var(--green-soft);
+  color: var(--green-dark);
+}
+.inv2-qty-btn:active {
+  background: var(--green);
+  color: white;
+  transform: scale(0.95);
+}
+@media (max-width: 720px) {
+  .inv2-qty-btn { width: 52px; font-size: 24px; }
+}
