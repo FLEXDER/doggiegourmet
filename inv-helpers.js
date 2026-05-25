@@ -12,35 +12,63 @@ window.INV_SUBMIT_REPORT_URL =
   'https://oaurovkvyrywmdsjhgaj.supabase.co/functions/v1/submit-inventory-report';
 
 /**
- * Sugerencias de productos para el datalist del form POS.
- * Permite que los puntos de venta vean opciones rápidas en
- * lugar de tener que escribir nombres de productos completos.
+ * Productos agrupados por categoría para los chips Quick-add del form POS.
+ * El form muestra chips BARF/Paletas/Perfumes y al tap expande los productos
+ * de esa categoría para que el POS los seleccione con un tap en lugar de
+ * tener que escribir el nombre completo.
  */
-window.INV_PRODUCT_SUGGESTIONS = [
-  'BARF Original 500g',
-  'BARF Original Perros Chicos 250g',
-  'BARF Gatos 250g',
-  'BARF Premium 500g',
-  'BARF Original con Betabel 500g',
-  'Paleta Plátano 90g',
-  'Paleta Zanahoria 90g',
-  'Paleta Pollo 90g',
-  'Paleta Hígado 90g',
-  'Perfume Bad Pup 100ml',
-  'Perfume Fur Leather 100ml',
-  'Perfume Dog Sauvage 100ml',
-  'Perfume Woof Girl 100ml',
-  'Perfume Pawer Bomb 100ml',
-  'Perfume La Vie Est Woof 100ml'
-];
+window.INV_PRODUCT_CATEGORIES = {
+  barf: {
+    label: 'BARF',
+    products: [
+      'BARF Original 500g',
+      'BARF Original Perros Chicos 250g',
+      'BARF Gatos 250g',
+      'BARF Premium 500g',
+      'BARF Original con Betabel 500g'
+    ]
+  },
+  paletas: {
+    label: 'Paletas',
+    products: [
+      'Paleta Plátano 90g',
+      'Paleta Zanahoria 90g',
+      'Paleta Pollo 90g',
+      'Paleta Hígado 90g'
+    ]
+  },
+  perfumes: {
+    label: 'Perfumes',
+    products: [
+      'Perfume Bad Pup 100ml',
+      'Perfume Fur Leather 100ml',
+      'Perfume Dog Sauvage 100ml',
+      'Perfume Woof Girl 100ml',
+      'Perfume Pawer Bomb 100ml',
+      'Perfume La Vie Est Woof 100ml'
+    ]
+  }
+};
+
+/**
+ * Sugerencias planas (legacy). Se genera desde INV_PRODUCT_CATEGORIES para
+ * mantener una sola fuente de verdad. Usado por el datalist del input
+ * "Nombre del producto" en el form POS.
+ */
+window.INV_PRODUCT_SUGGESTIONS = Object.values(window.INV_PRODUCT_CATEGORIES)
+  .flatMap((cat) => cat.products);
 
 /**
  * Lista de puntos de venta para el InventoryView (admin).
- * Estos IDs deben coincidir con los IDs en la tabla `puntos_venta`
+ * Estos IDs deben coincidir con los IDs en la tabla `points_of_sale`
  * de Supabase para que la persistencia funcione.
  */
 window.INV_POS_LIST = [
   { id: 'vitalpets', name: 'VitalPets', business: 'Hospital Veterinario VitalPets' },
+  { id: 'animalia', name: 'Animalia', business: 'Animalia Clínica Veterinaria' },
   { id: 'wuftown', name: 'Wuftown', business: 'Wuftown' },
-  { id: 'venelatto', name: 'Venelatto', business: 'Venelatto' }
+  { id: 'venelatto', name: 'Venelatto', business: 'Venelatto' },
+  { id: 'paleteria-michoacana', name: 'Paletería La Michoacana', business: 'Paletería La Michoacana' },
+  { id: 'gran-michoacana', name: 'La Gran Michoacana', business: 'La Gran Michoacana' },
+  { id: 'hielito-lindo', name: 'Hielito Lindo', business: 'Hielito Lindo Nieve de Garrafa' }
 ];
