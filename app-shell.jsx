@@ -244,7 +244,8 @@ function HomePage({ setRoute }) {
     { src: 'assets/hero/hero-1.webp', alt: 'Alimento BARF natural Doggie Gourmet' },
     { src: 'assets/hero/hero-2.webp', alt: 'Ingredientes frescos BARF' },
     { src: 'assets/hero/hero-3.webp', alt: 'BARF Premium 70% Pollo 30% Carne' },
-    { src: 'assets/hero/hero-4.webp', alt: 'Doggie Gourmet alimento crudo congelado' }
+    { src: 'assets/hero/hero-4.webp', alt: 'Doggie Gourmet alimento crudo congelado' },
+    { src: 'assets/hero/hero-5.webp', alt: 'Doggie Gourmet alimentación saludable' }
   ];
   const [activeHero, setActiveHero] = useState(0);
   useEffect(() => {
