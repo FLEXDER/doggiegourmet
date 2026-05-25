@@ -236,6 +236,24 @@ function HomePage({ setRoute }) {
   const catGridRef = useRef(null);
   const whyGridRef = useRef(null);
 
+  // Hero carousel: 4 fotos profesionales con auto-rotate cada 4.5s y crossfade.
+  // Si querés cambiar las fotos, reemplazá los archivos en /assets/hero/
+  // manteniendo los mismos nombres. Si querés cambiar el intervalo, ajustá
+  // el número de 4500 ms abajo.
+  const HERO_IMAGES = [
+    { src: 'assets/hero/hero-1.webp', alt: 'Alimento BARF natural Doggie Gourmet' },
+    { src: 'assets/hero/hero-2.webp', alt: 'Ingredientes frescos BARF' },
+    { src: 'assets/hero/hero-3.webp', alt: 'BARF Premium 70% Pollo 30% Carne' },
+    { src: 'assets/hero/hero-4.webp', alt: 'Doggie Gourmet alimento crudo congelado' }
+  ];
+  const [activeHero, setActiveHero] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => {
+      setActiveHero((i) => (i + 1) % HERO_IMAGES.length);
+    }, 4500);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <>
       <section className="hero">
@@ -277,7 +295,15 @@ alimentación natural y balanceada. Nuestro objetivo es mejorar la calidad de 
 
           <div className="hero-image-stack">
             <div className="hero-image-main">
-              <img src="assets/products/barf-premium-500.webp" alt="Premium BARF 500g" />
+              {HERO_IMAGES.map((img, i) => (
+                <img
+                  key={img.src}
+                  src={img.src}
+                  alt={img.alt}
+                  className={`hero-carousel-img ${i === activeHero ? 'active' : ''}`}
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                />
+              ))}
             </div>
             <div className="hero-image-tag">
               <div className="hero-image-tag-dot" />
