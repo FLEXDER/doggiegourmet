@@ -307,3 +307,4 @@ function PuntosVentaPage({ setRoute }) {
 }
 
 window.PuntosVentaPage = PuntosVentaPage;
+window.LOCATIONS = LOCATIONS;
