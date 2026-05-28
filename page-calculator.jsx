@@ -308,12 +308,14 @@ Quiero entrega a domicilio.`;
                 <span>O ingresa manualmente:</span>
                 <input
                   type="number"
+                  inputMode="decimal"
                   min={limits.min}
                   max={limits.max_hard}
                   step="0.5"
                   value={peso || ''}
                   onChange={e => setPeso(e.target.value)}
                   placeholder="kg"
+                  style={{ width: 124, minWidth: 124, boxSizing: 'border-box', textAlign: 'center', paddingLeft: 14, paddingRight: 14 }}
                 />
                 <span>kg</span>
               </div>
