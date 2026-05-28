@@ -168,11 +168,12 @@ function CalculatorPage({ setRoute }) {
   }, [razaSearch]);
 
   const calc = uMC(() => {
+    const PORTION_ADJUST = 0.85; // Ajuste global de porción (-15%). Baja a 0.80 para -20%, sube a 0.90 para -10%
     const baseBolsasMes = interpolateRow(Number(peso) || 0, edad);
     const mult = ACTIVITY_MULT[actividad];
     const product = suggestProduct(Number(peso) || 0, especie);
     const gramosBase500 = (baseBolsasMes * 500) / 30;
-    const gramosDia = gramosBase500 * mult;
+    const gramosDia = gramosBase500 * mult * PORTION_ADJUST;
     const bagsDia = gramosDia / product.gramsPerBag;
     const bagsQuincena = bagsDia * 15 * (Number(perros) || 1);
     const bagsMes = bagsDia * 30 * (Number(perros) || 1);
