@@ -513,6 +513,7 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
   const bolsas = useCountUp(periodoData.bolsas, 1000);
   const [pdfLoading, setPdfLoading] = uSC(false);
   const [petPhoto, setPetPhoto] = uSC(null);
+  const [petName, setPetName] = uSC('');
   const photoInputRef = uRC(null);
   const resultRef = uRC(null);
 
@@ -724,7 +725,8 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
       doc.setTextColor(...C.brown);
       doc.setFontSize(26);
       doc.setFont('helvetica', 'bold');
-      doc.text(`Tu mascota necesita ${calc.gramosTotalDia} g al día`, M, y);
+      const sujeto = petName.trim() ? petName.trim() : 'Tu mascota';
+      doc.text(`${sujeto} necesita ${calc.gramosTotalDia} g al día`, M, y);
 
       y += 8;
       doc.setTextColor(...C.muted);
@@ -980,7 +982,7 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
           <span className="calc2-result-eyebrow-dot"/> Plan personalizado
         </div>
         <h2 className="calc2-result-title">
-          Tu mascota necesita <em>{gramos} g</em> al día.
+          {petName.trim() ? petName.trim() : 'Tu mascota'} necesita <em>{gramos} g</em> al día.
         </h2>
         <p className="calc2-result-sub">
           Plan basado en {peso} kg, edad {edad.toLowerCase()}, actividad {actividad.toLowerCase()}{perros > 1 ? `, ${perros} mascotas` : ''}.
@@ -1047,6 +1049,37 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
         <a className="calc2-cta-secondary" href={onAsesor()} target="_blank" rel="noopener noreferrer">
           Hablar con un asesor
         </a>
+      </div>
+
+      {/* Personalizar el plan: nombre + foto del perro */}
+      <div data-pdf-hide="true" style={{ marginTop: 12 }}>
+        <label style={{
+          display: 'block', fontSize: 13, fontWeight: 600,
+          color: 'var(--brown, #6B5826)', marginBottom: 6
+        }}>
+          Nombre de tu perro <span style={{ fontWeight: 400, color: 'var(--muted, #8c826e)' }}>(opcional, aparece en tu PDF)</span>
+        </label>
+        <input
+          type="text"
+          value={petName}
+          maxLength={14}
+          onChange={(e) => setPetName(e.target.value)}
+          placeholder="Ej. Akira"
+          style={{
+            width: '100%',
+            padding: '12px 16px',
+            borderRadius: 12,
+            border: '1.5px solid rgba(115, 150, 60, 0.3)',
+            background: '#fff',
+            fontSize: 15,
+            fontFamily: 'inherit',
+            color: 'var(--brown, #4a3b10)',
+            outline: 'none',
+            boxSizing: 'border-box'
+          }}
+          onFocus={(e) => e.target.style.borderColor = 'var(--green, #73963C)'}
+          onBlur={(e) => e.target.style.borderColor = 'rgba(115, 150, 60, 0.3)'}
+        />
       </div>
 
       {/* Subir foto del perro para personalizar el PDF */}
