@@ -580,6 +580,42 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
     }
   };
 
+  // Crea una versión circular de una imagen con borde blanco (badge flotante)
+  const makeCircularImage = (src, size = 320, borderPx = 16) => new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        // Círculo blanco de fondo (hace de borde)
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        // Recorte circular interior, dejando el aro blanco
+        ctx.save();
+        const r = size / 2 - borderPx;
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, r, 0, Math.PI * 2);
+        ctx.clip();
+        // Dibujar la imagen tipo "cover" centrada
+        const side = Math.min(img.naturalWidth, img.naturalHeight);
+        const sx = (img.naturalWidth - side) / 2;
+        const sy = (img.naturalHeight - side) / 2;
+        ctx.drawImage(img, sx, sy, side, side, borderPx, borderPx, size - borderPx * 2, size - borderPx * 2);
+        ctx.restore();
+        resolve(canvas.toDataURL('image/png'));
+      } catch (e) {
+        reject(e);
+      }
+    };
+    img.onerror = () => reject(new Error('No se pudo cargar la imagen para el badge'));
+    img.src = src;
+  });
+
   const handleDownloadPDF = async () => {
     if (pdfLoading || !resultRef.current) return;
     setPdfLoading(true);
@@ -605,6 +641,16 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
         logoImage = await loadImageAsDataURL('assets/brand/logo-white.png', 'png');
       } catch (e) {
         console.warn('No se pudo cargar el logo, se usará texto de respaldo:', e);
+      }
+
+      // Si hay foto del perro, preparar la bolsa como badge circular flotante
+      let bagBadge = null;
+      if (petPhoto && calc.product.img) {
+        try {
+          bagBadge = await makeCircularImage(calc.product.img, 320, 16);
+        } catch (e) {
+          console.warn('No se pudo crear el badge de la bolsa:', e);
+        }
       }
 
       const { jsPDF } = window.jspdf;
@@ -652,9 +698,13 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
       const today = new Date().toLocaleDateString('es-MX', {
         day: 'numeric', month: 'long', year: 'numeric'
       });
-      doc.setFontSize(8);
-      doc.text(today, PW - M, 12, { align: 'right' });
-      doc.text('Plan personalizado', PW - M, 17, { align: 'right' });
+      doc.setTextColor(...C.white);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text(today, PW - M, 11, { align: 'right' });
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Plan personalizado', PW - M, 16.5, { align: 'right' });
 
       let y = 32;
 
@@ -710,6 +760,13 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
           'FAST'
         );
         textStartX = M + 4 + imgSize + 8;
+        // Badge circular de la bolsa flotando en la esquina inferior derecha
+        if (bagBadge) {
+          const badgeSize = 19;
+          const badgeX = imgX + imgSize - badgeSize + 3;
+          const badgeY = imgY + imgSize - badgeSize + 3;
+          doc.addImage(bagBadge, 'PNG', badgeX, badgeY, badgeSize, badgeSize, undefined, 'FAST');
+        }
       }
 
       // Tag pequeño "RECOMENDACIÓN" en la columna del texto (arriba)
