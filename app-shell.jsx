@@ -288,7 +288,7 @@ alimentación natural y balanceada. Nuestro objetivo es mejorar la calidad de 
                 <div className="hero-stat-lbl">Productos disponibles</div>
               </div>
               <div>
-                <div className="hero-stat-num">3+</div>
+                <div className="hero-stat-num">{((window.LOCATIONS && window.LOCATIONS.length) || 7)}+</div>
                 <div className="hero-stat-lbl">Puntos de venta</div>
               </div>
             </div>
