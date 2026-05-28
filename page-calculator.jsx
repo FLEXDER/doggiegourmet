@@ -512,6 +512,8 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
   const gramos = useCountUp(calc.gramosTotalDia, 1000);
   const bolsas = useCountUp(periodoData.bolsas, 1000);
   const [pdfLoading, setPdfLoading] = uSC(false);
+  const [petPhoto, setPetPhoto] = uSC(null);
+  const photoInputRef = uRC(null);
   const resultRef = uRC(null);
 
   const loadScript = (src) => new Promise((resolve, reject) => {
@@ -525,7 +527,7 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
   });
 
   // Helper: cargar imagen como base64 (necesario para meterla en jsPDF)
-  const loadImageAsDataURL = (src) => new Promise((resolve, reject) => {
+  const loadImageAsDataURL = (src, format = 'jpeg') => new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
@@ -535,8 +537,11 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
         canvas.height = img.naturalHeight;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
+        const dataUrl = format === 'png'
+          ? canvas.toDataURL('image/png')
+          : canvas.toDataURL('image/jpeg', 0.85);
         resolve({
-          dataUrl: canvas.toDataURL('image/jpeg', 0.85),
+          dataUrl: dataUrl,
           width: img.naturalWidth,
           height: img.naturalHeight
         });
@@ -547,6 +552,33 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
     img.onerror = () => reject(new Error('No se pudo cargar la imagen'));
     img.src = src;
   });
+
+  // Procesa la foto del perro: corrige orientación EXIF, recorta a cuadrado y redimensiona
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    try {
+      let bitmap;
+      try {
+        bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+      } catch (_) {
+        bitmap = await createImageBitmap(file);
+      }
+      const side = Math.min(bitmap.width, bitmap.height);
+      const sx = (bitmap.width - side) / 2;
+      const sy = (bitmap.height - side) / 2;
+      const target = 600;
+      const canvas = document.createElement('canvas');
+      canvas.width = target;
+      canvas.height = target;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(bitmap, sx, sy, side, side, 0, 0, target, target);
+      setPetPhoto(canvas.toDataURL('image/jpeg', 0.85));
+    } catch (err) {
+      console.error('Error al procesar la foto:', err);
+      alert('No se pudo procesar la foto. Intenta con otra imagen.');
+    }
+  };
 
   const handleDownloadPDF = async () => {
     if (pdfLoading || !resultRef.current) return;
@@ -565,6 +597,14 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
         productImage = await loadImageAsDataURL(calc.product.img);
       } catch (e) {
         console.warn('No se pudo cargar imagen del producto, generando PDF sin ella:', e);
+      }
+
+      // Logo blanco para el header (PNG con transparencia)
+      let logoImage = null;
+      try {
+        logoImage = await loadImageAsDataURL('assets/brand/logo-white.png', 'png');
+      } catch (e) {
+        console.warn('No se pudo cargar el logo, se usará texto de respaldo:', e);
       }
 
       const { jsPDF } = window.jspdf;
@@ -593,14 +633,21 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
       doc.setFillColor(...C.greenDark);
       doc.rect(0, 0, PW, 22, 'F');
 
-      doc.setTextColor(...C.white);
-      doc.setFontSize(18);
-      doc.setFont('helvetica', 'bold');
-      doc.text('DOGGIE GOURMET', M, 12);
-
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'normal');
-      doc.text('ALIMENTO · ESTILO DE VIDA', M, 17);
+      // Logo blanco en el header (con respaldo a texto si no carga)
+      if (logoImage) {
+        const logoH = 11;
+        const logoW = logoH * (logoImage.width / logoImage.height);
+        const logoY = (22 - logoH) / 2;
+        doc.addImage(logoImage.dataUrl, 'PNG', M, logoY, logoW, logoH, undefined, 'FAST');
+      } else {
+        doc.setTextColor(...C.white);
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text('DOGGIE GOURMET', M, 12);
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.text('ALIMENTO · ESTILO DE VIDA', M, 17);
+      }
 
       const today = new Date().toLocaleDateString('es-MX', {
         day: 'numeric', month: 'long', year: 'numeric'
@@ -645,14 +692,15 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
       doc.setFillColor(...C.creamCard);
       doc.roundedRect(M, y, CW, recBoxH, 3, 3, 'F');
 
-      // Imagen del producto (lado izquierdo)
+      // Imagen (lado izquierdo): foto del perro si la subió, si no la bolsa del producto
       let textStartX = M + 6;
-      if (productImage) {
+      const heroImg = petPhoto || (productImage ? productImage.dataUrl : null);
+      if (heroImg) {
         const imgSize = 48;
         const imgX = M + 4;
         const imgY = y + 4;
         doc.addImage(
-          productImage.dataUrl,
+          heroImg,
           'JPEG',
           imgX,
           imgY,
@@ -943,6 +991,87 @@ function ResultScreen({ calc, periodo, periodoData, peso, raza, edad, actividad,
           Hablar con un asesor
         </a>
       </div>
+
+      {/* Subir foto del perro para personalizar el PDF */}
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handlePhotoUpload}
+        style={{ display: 'none' }}
+      />
+
+      {petPhoto ? (
+        <div data-pdf-hide="true" style={{
+          marginTop: 12,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '12px 16px',
+          borderRadius: 12,
+          background: 'rgba(115, 150, 60, 0.08)',
+          border: '1px solid rgba(115, 150, 60, 0.25)'
+        }}>
+          <img src={petPhoto} alt="Foto de tu perro" style={{
+            width: 48, height: 48, borderRadius: 10, objectFit: 'cover', flexShrink: 0
+          }}/>
+          <div style={{ flex: 1, fontSize: 13, lineHeight: 1.4, color: 'var(--brown, #4a3b10)' }}>
+            <strong style={{ color: 'var(--green, #73963C)' }}>Foto lista.</strong> Aparecerá en tu plan en PDF.
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+            <button
+              onClick={() => photoInputRef.current && photoInputRef.current.click()}
+              style={{
+                padding: '7px 12px', borderRadius: 999, background: 'transparent',
+                border: '1.5px solid var(--green, #73963C)', color: 'var(--green, #73963C)',
+                fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer'
+              }}
+            >
+              Cambiar
+            </button>
+            <button
+              onClick={() => setPetPhoto(null)}
+              style={{
+                padding: '7px 12px', borderRadius: 999, background: 'transparent',
+                border: '1.5px solid rgba(140, 130, 110, 0.4)', color: 'var(--brown, #6B5826)',
+                fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer'
+              }}
+            >
+              Quitar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => photoInputRef.current && photoInputRef.current.click()}
+          data-pdf-hide="true"
+          style={{
+            marginTop: 12,
+            width: '100%',
+            padding: '14px 20px',
+            borderRadius: 999,
+            background: 'rgba(115, 150, 60, 0.08)',
+            border: '1.5px dashed var(--green, #73963C)',
+            color: 'var(--green, #73963C)',
+            fontSize: 15,
+            fontWeight: 600,
+            fontFamily: 'inherit',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          Agregar foto de mi perro al PDF
+        </button>
+      )}
 
       <button
         onClick={handleDownloadPDF}
