@@ -25,6 +25,18 @@ window.PRODUCTS = {
       { id: 'paleta-higado', price: 50, name: 'Hígado', tag: 'Liver', size: '90 g', sku: 'DG-PL-HIG', img: 'assets/products/paleta-higado.webp', desc: 'Paleta de hígado — premio favorito de entrenadores y consentido de cualquier perro.' },
     ],
   },
+  snacks: {
+    id: 'snacks',
+    label: 'Snacks',
+    title: 'Snacks congelados en forma de huellita',
+    desc: 'Bocaditos crujientes y saludables, en las mismas recetas naturales de nuestras paletas pero en un formato más práctico para premiar y consentir.',
+    items: [
+      { id: 'snack-platano', price: 45, name: 'Plátano', tag: 'Perros y gatos', size: '90 g · 8 huellitas', sku: 'DG-SN-PLA', img: 'assets/products/snacks-platano.webp', desc: 'Snacks congelados de plátano natural — dulces, ricos en potasio y en formato huellita para premios rápidos.' },
+      { id: 'snack-zanahoria', price: 45, name: 'Zanahoria', tag: 'Perros y gatos', size: '90 g · 8 huellitas', sku: 'DG-SN-ZAN', img: 'assets/products/snacks-zanahoria.webp', desc: 'Snacks congelados de zanahoria — crujientes al medio descongelar, con beta-caroteno para una vista sana.' },
+      { id: 'snack-pollo', price: 50, name: 'Pollo', tag: 'Perros y gatos', size: '90 g · 8 huellitas', sku: 'DG-SN-POL', img: 'assets/products/snacks-pollo.webp', desc: 'Snacks congelados de caldo de pollo — sabrosos e hidratantes, perfectos para entrenamientos o antojos.' },
+      { id: 'snack-higado', price: 50, name: 'Hígado', tag: 'Perros y gatos', size: '90 g · 8 huellitas', sku: 'DG-SN-HIG', img: 'assets/products/snacks-higado.webp', desc: 'Snacks congelados de hígado — el premio favorito de entrenadores en un formato huellita irresistible.' },
+    ],
+  },
   perfumes: {
     id: 'perfumes',
     label: 'Perfumes',
@@ -41,7 +53,7 @@ window.PRODUCTS = {
   },
 };
 
-window.CATEGORY_ORDER = ['barf', 'paletas', 'perfumes'];
+window.CATEGORY_ORDER = ['barf', 'paletas', 'snacks', 'perfumes'];
 
 // =============== Tabla de alimentación BARF (Doggie Gourmet) ===============
 // Datos derivados de la guía oficial. bolsasMes asume bolsa de 500g.
