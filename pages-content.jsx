@@ -15,7 +15,7 @@ function ProductsPage({ setRoute }) {
   const [active, setActive] = useState2('all');
   const cats = CATEGORY_ORDER;
 
-  const labels = { barf: 'BARF', paletas: 'Paletas', perfumes: 'Perfumes' };
+  const labels = { barf: 'BARF', paletas: 'Paletas', snacks: 'Snacks', perfumes: 'Perfumes' };
 
   React.useEffect(() => {
     const pending = window.__pendingCat;
@@ -40,7 +40,7 @@ function ProductsPage({ setRoute }) {
         <div className="container">
           <div className="page-head-grid">
             <div>
-              <div className="eyebrow">Catálogo · 15 SKUs</div>
+              <div className="eyebrow">Catálogo · {cats.reduce((n, id) => n + PRODUCTS[id].items.length, 0)} SKUs</div>
               <h1 className="h-display" style={{ fontSize: 'clamp(36px, 5vw, 64px)', marginTop: 12 }}>
                 Productos gourmet <em>buenos chicos</em>.
               </h1>
@@ -70,7 +70,12 @@ function ProductsPage({ setRoute }) {
               <div className="cat-section-head">
                 <div>
                   <div className="num">0{idx + 1} · <span translate="no">{labels[id].toUpperCase()}</span></div>
-                  <h3>{id === 'barf' ? <>Alimento <em translate="no">BARF</em></> : id === 'paletas' ? <>Paletas <em>Congeladas</em></> : <>Perfumes <em>para Mascotas</em></>}</h3>
+                  <h3>{
+                    id === 'barf' ? <>Alimento <em translate="no">BARF</em></> :
+                    id === 'paletas' ? <>Paletas <em>Congeladas</em></> :
+                    id === 'snacks' ? <>Snacks <em>Congelados</em></> :
+                    <>Perfumes <em>para Mascotas</em></>
+                  }</h3>
                 </div>
                 <p>{cat.title}.<br />{cat.desc}</p>
               </div>
@@ -108,7 +113,7 @@ function ProductsPage({ setRoute }) {
 }
 
 function ProductCard({ p, category }) {
-  const imgClass = category === 'perfumes' ? 'product-img tall' : category === 'paletas' ? 'product-img paleta' : 'product-img';
+  const imgClass = category === 'perfumes' ? 'product-img tall' : (category === 'paletas' || category === 'snacks') ? 'product-img paleta' : 'product-img';
   const tagClass = category === 'barf' ? 'product-tag green' : 'product-tag';
 
   // Cantidad actual en el carrito (se mantiene sincronizada vía evento global 'cart-changed')
