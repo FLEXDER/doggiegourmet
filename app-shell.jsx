@@ -284,7 +284,7 @@ alimentación natural y balanceada. Nuestro objetivo es mejorar la calidad de 
                 <div className="hero-stat-lbl">Ingredientes naturales</div>
               </div>
               <div>
-                <div className="hero-stat-num">15</div>
+                <div className="hero-stat-num">{(window.CATEGORY_ORDER && window.PRODUCTS) ? window.CATEGORY_ORDER.reduce((n, c) => n + (window.PRODUCTS[c] ? window.PRODUCTS[c].items.length : 0), 0) : 19}</div>
                 <div className="hero-stat-lbl">Productos disponibles</div>
               </div>
               <div>
