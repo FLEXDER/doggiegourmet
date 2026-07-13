@@ -51,7 +51,7 @@ function ProductsPage({ setRoute }) {
           </div>
           <div className="cat-tabs">
             <button className={`cat-tab ${active === 'all' ? 'active' : ''}`} onClick={() => setActive('all')}>
-              Todo <span className="cat-tab-count">15</span>
+              Todo <span className="cat-tab-count">{cats.reduce((n, id) => n + PRODUCTS[id].items.length, 0)}</span>
             </button>
             {cats.map((id) =>
             <button key={id} className={`cat-tab ${active === id ? 'active' : ''}`} onClick={() => setActive(id)}>
