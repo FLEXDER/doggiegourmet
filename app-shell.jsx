@@ -375,29 +375,6 @@ alimentación natural y balanceada. Nuestro objetivo es mejorar la calidad de 
         </div>
       </section>
 
-      <section className="section section-tight" style={{ paddingTop: 0 }}>
-        <div className="container">
-          <div className="banner-inv" style={{ background: 'var(--paper)', color: 'var(--brown)', border: '1px solid var(--line)', backgroundColor: "rgb(248, 240, 225)" }}>
-            <div>
-              <div className="eyebrow">Para Veterinarias · Pet Shops · Distribuidores</div>
-              <h2 style={{ marginTop: 14, color: 'var(--brown)' }}>Resurte <em style={{ color: "rgb(92, 122, 47)" }}>en menos de un minuto</em>.</h2>
-              <p style={{ color: 'var(--brown-soft)' }}>Compártenos tu inventario actual y la cantidad de productos que necesitas.
-Te confirmamos y coordinamos la entrega.</p>
-              <button className="btn btn-dark btn-lg" onClick={() => setRoute('inventory')}>
-                Reportar inventario <Icon name="arrow" />
-              </button>
-            </div>
-            <div className="banner-mock" style={{ background: 'var(--cream)', color: 'var(--brown)', border: '1px solid var(--line)' }}>
-              <div className="banner-mock-head" style={{ color: 'var(--green)' }}>▮ Reporte de stock · ejemplo</div>
-              <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}><span translate="no">BARF</span> · Original 500g</span><span style={{ color: 'var(--green)' }}>12</span></div>
-              <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}><span translate="no">BARF</span> · Premium 500g</span><span style={{ color: 'var(--green)' }}>8</span></div>
-              <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}>Paleta · Plátano</span><span style={{ color: 'var(--green)' }}>20</span></div>
-              <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}>Perfume · Bad Pup</span><span style={{ color: 'var(--green)' }}>3</span></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ============== Instagram feed ============== */}
       <section className="section" style={{ paddingTop: 72, paddingBottom: 96 }}>
         <div className="container">
