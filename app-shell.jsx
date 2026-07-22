@@ -236,25 +236,6 @@ function HomePage({ setRoute }) {
   const catGridRef = useRef(null);
   const whyGridRef = useRef(null);
 
-  // Hero carousel: 4 fotos profesionales con auto-rotate cada 4.5s y crossfade.
-  // Si querés cambiar las fotos, reemplazá los archivos en /assets/hero/
-  // manteniendo los mismos nombres. Si querés cambiar el intervalo, ajustá
-  // el número de 4500 ms abajo.
-  const HERO_IMAGES = [
-    { src: 'assets/hero/hero-1.webp', alt: 'Alimento BARF natural Doggie Gourmet' },
-    { src: 'assets/hero/hero-2.webp', alt: 'Ingredientes frescos BARF' },
-    { src: 'assets/hero/hero-3.webp', alt: 'BARF Premium 70% Pollo 30% Carne' },
-    { src: 'assets/hero/hero-4.webp', alt: 'Doggie Gourmet alimento crudo congelado' },
-    { src: 'assets/hero/hero-5.webp', alt: 'Doggie Gourmet alimentación saludable' }
-  ];
-  const [activeHero, setActiveHero] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => {
-      setActiveHero((i) => (i + 1) % HERO_IMAGES.length);
-    }, 4500);
-    return () => clearInterval(id);
-  }, []);
-
   return (
     <>
       <section className="hero">
@@ -262,7 +243,7 @@ function HomePage({ setRoute }) {
           <div>
             <div className="hero-eyebrow-row">
               <div className="dot" />
-              <span>Calcula tu dieta · Disponible en {(window.LOCATIONS && window.LOCATIONS.length) || 7} puntos de venta</span>
+              <span>Calcula tu dieta · Disponible en 3 puntos de venta</span>
             </div>
             <h1 className="h-display">
               Comida <br /><em>Gourmet y natural</em><br />para tu mascota.
@@ -284,11 +265,11 @@ alimentación natural y balanceada. Nuestro objetivo es mejorar la calidad de 
                 <div className="hero-stat-lbl">Ingredientes naturales</div>
               </div>
               <div>
-                <div className="hero-stat-num">{(window.CATEGORY_ORDER && window.PRODUCTS) ? window.CATEGORY_ORDER.reduce((n, c) => n + (window.PRODUCTS[c] ? window.PRODUCTS[c].items.length : 0), 0) : 19}</div>
+                <div className="hero-stat-num">15</div>
                 <div className="hero-stat-lbl">Productos disponibles</div>
               </div>
               <div>
-                <div className="hero-stat-num">{((window.LOCATIONS && window.LOCATIONS.length) || 7)}+</div>
+                <div className="hero-stat-num">3+</div>
                 <div className="hero-stat-lbl">Puntos de venta</div>
               </div>
             </div>
@@ -296,15 +277,7 @@ alimentación natural y balanceada. Nuestro objetivo es mejorar la calidad de 
 
           <div className="hero-image-stack">
             <div className="hero-image-main">
-              {HERO_IMAGES.map((img, i) => (
-                <img
-                  key={img.src}
-                  src={img.src}
-                  alt={img.alt}
-                  className={`hero-carousel-img ${i === activeHero ? 'active' : ''}`}
-                  loading={i === 0 ? 'eager' : 'lazy'}
-                />
-              ))}
+              <img src="assets/products/barf-premium-500.webp" alt="Premium BARF 500g" />
             </div>
             <div className="hero-image-tag">
               <div className="hero-image-tag-dot" />
@@ -416,11 +389,50 @@ Te confirmamos y coordinamos la entrega.</p>
             </div>
             <div className="banner-mock" style={{ background: 'var(--cream)', color: 'var(--brown)', border: '1px solid var(--line)' }}>
               <div className="banner-mock-head" style={{ color: 'var(--green)' }}>▮ Reporte de stock · ejemplo</div>
-              <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}><span translate="no" style={{ color: 'var(--green-dark)', fontWeight: 700 }}>BARF</span> · Original 500g</span><span style={{ color: 'var(--green)' }}>12</span></div>
-              <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}><span translate="no" style={{ color: 'var(--green-dark)', fontWeight: 700 }}>BARF</span> · Premium 500g</span><span style={{ color: 'var(--green)' }}>8</span></div>
+              <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}><span translate="no">BARF</span> · Original 500g</span><span style={{ color: 'var(--green)' }}>12</span></div>
+              <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}><span translate="no">BARF</span> · Premium 500g</span><span style={{ color: 'var(--green)' }}>8</span></div>
               <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}>Paleta · Plátano</span><span style={{ color: 'var(--green)' }}>20</span></div>
               <div className="banner-mock-row" style={{ borderColor: 'var(--line)' }}><span style={{ color: 'var(--brown-soft)' }}>Perfume · Bad Pup</span><span style={{ color: 'var(--green)' }}>3</span></div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============== Instagram feed ============== */}
+      <section className="section" style={{ paddingTop: 72, paddingBottom: 96 }}>
+        <div className="container">
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            textAlign: 'center',
+            marginBottom: 40
+          }}>
+            <div className="eyebrow" style={{ marginBottom: 12 }}>
+              <span className="eyebrow-dot" style={{ background: 'var(--green)' }}></span>
+              Instagram
+            </div>
+            <h2 style={{ marginTop: 0, marginBottom: 14 }}>
+              Síguenos en <em>@doggie_gourmet</em>
+            </h2>
+            <p className="lead" style={{ maxWidth: 560, color: 'var(--brown-soft)', marginBottom: 24 }}>
+              Consejos, recetas y momentos con nuestros clientes de cuatro patas.
+              Sé el primero en enterarte de novedades y promociones.
+            </p>
+            <a
+              href={INSTAGRAM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-outline"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+            >
+              Ver perfil en Instagram <Icon name="arrow" size={16} />
+            </a>
+          </div>
+
+          {/* Widget de Behold (feed de Instagram) */}
+          <div className="ig-feed-wrap">
+            <behold-widget feed-id="eAdNh8K4mRWl3EgaXtWn"></behold-widget>
           </div>
         </div>
       </section>
