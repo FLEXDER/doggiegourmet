@@ -10,7 +10,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Supabase
+        env:
+          RAW_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
+          KEY=$(printf '%s' "$RAW_KEY" | tr -d '[:space:]')
+          if [ -z "$KEY" ]; then
+            echo "El secret SUPABASE_ANON_KEY llego vacio"
+            exit 1
+          fi
+          echo "Longitud de la llave: ${#KEY}"
           curl -sS -o /dev/null -w "HTTP %{http_code}\n" \
-            "https://oaurovkvyrywmdsjhgaj.supabase.co/rest/v1/${{ secrets.SUPABASE_PING_TABLE }}?select=id&limit=1" \
-            -H
+            "https://oaurovkvyrywmdsjhgaj.supabase.co/rest/v1/products?select=id&limit=1" \
+            -H "apikey: $KEY" \
+            -H "Authorization: Bearer $KEY"
