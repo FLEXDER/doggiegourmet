@@ -21,7 +21,9 @@ const { useState: useSRoot, useEffect: useERoot } = React;
 const sbRoot = window.supabaseClient;
 
 function InventoryPage() {
-  const [posProfile, setPosProfile] = useSRoot(null);
+  // { profile, pin } del POS. El PIN solo vive en memoria (se pierde al
+  // recargar) y se manda a submit_inventory_report para validarlo de nuevo.
+  const [posSession, setPosSession] = useSRoot(null);
   const [masterSession, setMasterSession] = useSRoot(undefined); // undefined = aún cargando
   const [showMasterLogin, setShowMasterLogin] = useSRoot(false);
 
@@ -65,8 +67,13 @@ function InventoryPage() {
   }
 
   // Estado: POS con PIN ya validado
-  if (posProfile) {
-    return <PosReportForm profile={posProfile} onLogout={() => setPosProfile(null)} />;
+  if (posSession) {
+    return (
+      <PosReportForm
+        profile={posSession.profile}
+        pin={posSession.pin}
+        onLogout={() => setPosSession(null)} />
+    );
   }
 
   // Estado: usuario en pantalla de login master
@@ -77,7 +84,7 @@ function InventoryPage() {
   // Estado por defecto: PIN gate del POS
   return (
     <PinGate
-      onUnlock={setPosProfile}
+      onUnlock={(profile, pin) => setPosSession({ profile, pin })}
       onMasterClick={() => setShowMasterLogin(true)} />
   );
 }
