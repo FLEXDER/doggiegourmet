@@ -1,7 +1,6 @@
 /* ============================================================
    DOGGIE GOURMET — inv-helpers.js
-   Constantes globales del módulo de inventario.
-   Se carga PRIMERO de los archivos inv-*.
+   Constantes del módulo de inventario.
 
    La WEB3FORMS_KEY se movió a la Edge Function submit-inventory-report
    (Supabase) para que no quede expuesta en el frontend. El form solo

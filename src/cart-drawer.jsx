@@ -10,7 +10,7 @@
 
    Depende de: cart-hook.jsx (useCart), cart-helpers.js
               (constantes + buildOrderText + submitOrderToBackend
-              + openWholesaleWhatsapp), Icon (global)
+              + openWholesaleWhatsapp), Icon
    Expone:    CartDrawer
    ============================================================ */
 

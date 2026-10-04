@@ -6,7 +6,7 @@
    - StatusBadge: pill con dot de color por estado
    - ReportCard: card expandible con detalles de un reporte
 
-   Depende de: Icon (global)
+   Depende de: Icon
    Expone:    InvStat, InvFilterGroup,
               InvFilterChip, InvStatusBadge,
               InvReportCard

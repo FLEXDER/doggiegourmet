@@ -7,9 +7,6 @@
    - Con sesión POS (PIN OK) → PosReportForm
    - Con sesión Master (auth) → MasterDashboard
 
-   Este archivo SE CARGA AL FINAL de los inv-* y referencia
-   los componentes vía window.* (todos cargados antes).
-
    Depende de: supabaseClient, PinGate,
               MasterLogin, PosReportForm,
               MasterDashboard
