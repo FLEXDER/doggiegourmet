@@ -1,8 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// DG_PREVIEW=1 construye la vista previa para doggiegourmet.com.mx/preview/:
-// con la franja "VISTA PREVIA" y sin indexar en buscadores.
+// Vista previa (opcional): DG_PREVIEW=1 construye el sitio para
+// doggiegourmet.com.mx/preview/, con la franja "VISTA PREVIA" y sin indexar en
+// buscadores. El workflow Deploy no la usa; para volver a publicarla hay que
+// agregarle un segundo build con DG_PREVIEW=1 copiado a dist/preview/.
 const PREVIEW = process.env.DG_PREVIEW === '1';
 
 function previewBanner() {

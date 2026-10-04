@@ -1,8 +1,7 @@
 /* ============================================================
    DOGGIE GOURMET — cart-helpers.js
-   Constantes globales y funciones utilitarias puras (sin React).
-   Todo se expone vía window.* para que los demás módulos del cart
-   puedan consumirlo. Este archivo se carga PRIMERO de los cart-*.
+   Constantes y funciones utilitarias puras (sin React).
+   Se exportan para que los demás archivos del carrito las importen.
    ============================================================ */
 
 export const CART_STORAGE_KEY = 'dg_cart_v1';

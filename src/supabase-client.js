@@ -1,7 +1,7 @@
 /* ============================================================
    DOGGIE GOURMET — Cliente Supabase
    Inicializa la conexión con la base de datos.
-   Se carga UNA VEZ al inicio de la página.
+   Los demás archivos importan el mismo cliente (una sola conexión).
    ============================================================ */
 
 import { createClient } from '@supabase/supabase-js';

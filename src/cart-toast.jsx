@@ -7,7 +7,7 @@
    Se suprime automáticamente cuando el drawer del carrito está
    abierto (para no duplicar feedback al usuario).
 
-   Depende de: Icon (global), evento custom 'cart-toast'
+   Depende de: Icon, evento custom 'cart-toast'
    Expone:    CartToast
    ============================================================ */
 
