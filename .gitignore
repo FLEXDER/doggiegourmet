@@ -1,0 +1,4 @@
+node_modules/
+dist/
+# Fase 2: public/ se arma dentro del workflow; no se guarda en el repo.
+public/
