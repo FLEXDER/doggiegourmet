@@ -24,22 +24,58 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Revisar el código (src/)
+        run: npm run lint
+
+      # Transición (Fase 2): las fotos y favicons siguen en la raíz del repo;
+      # se copian a public/ solo dentro de esta corrida para el build de Vite.
+      - name: Preparar public/ para la vista previa
+        run: |
+          mkdir public
+          cp -r assets favicon.svg favicon.ico favicon-*.png apple-touch-icon.png \
+            site.webmanifest web-app-manifest-*.png public/
+
+      - name: Construir la vista previa (Vite)
+        run: npm run build
+        env:
+          DG_PREVIEW: '1'
+
       - name: Copiar archivos del sitio
         run: |
           mkdir _site
-          # Todo el repo se publica tal cual, excepto lo que no es parte del sitio.
+          # El sitio actual se publica tal cual en la raíz, excepto lo que no es
+          # parte del sitio (incluido el código y las herramientas de Vite).
           tar -cf - \
             --exclude=./.git \
             --exclude=./.github \
             --exclude=./supabase \
             --exclude=./README.md \
             --exclude=./.gitattributes \
+            --exclude=./.gitignore \
             --exclude=./_site \
+            --exclude=./src \
+            --exclude=./public \
+            --exclude=./dist \
+            --exclude=./node_modules \
+            --exclude=./package.json \
+            --exclude=./package-lock.json \
+            --exclude=./vite.config.js \
+            --exclude=./eslint.config.js \
             . | tar -xf - -C _site
+          # La versión de Vite va en /preview/.
+          cp -r dist _site/preview
 
       - name: Revisar que no falte nada esencial
         run: |
-          for f in index.html CNAME 404.html styles.css data.js app.jsx; do
+          for f in index.html CNAME 404.html styles.css data.js app.jsx preview/index.html preview/assets/brand/logo.png; do
             if [ ! -f "_site/$f" ]; then
               echo "::error::Falta _site/$f"
               exit 1
