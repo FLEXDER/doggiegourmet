@@ -2,10 +2,12 @@
 /* ============================================================
    DOGGIE GOURMET — inv-pos-flow.jsx
    Flujo completo del Punto de Venta (POS):
-   - PinGate: validación de PIN de 4 dígitos contra Supabase RPC
+   - PinGate: validación de PIN de 4 dígitos con la RPC pos_login
+     (el servidor limita los intentos fallidos)
    - PosHeader: barra superior con datos del negocio + logout
    - BizField: campo readonly de info del negocio
-   - PosReportForm: formulario para capturar productos + envío
+   - PosReportForm: formulario para capturar productos + envío con la
+     RPC submit_inventory_report (vuelve a validar el PIN en el servidor)
    - PosSuccessView: pantalla de confirmación post-envío
 
    Depende de: window.supabaseClient (sb), Icon, EMAIL,
@@ -54,11 +56,10 @@ function PinGate({ onUnlock, onMasterClick }) {
     setLoading(true);
     setError('');
     try {
-      const { data, error: rpcError } = await sbPos.rpc('verify_pin', { p_pin: code });
+      const { data: profile, error: rpcError } = await sbPos.rpc('pos_login', { p_pin: code });
       if (rpcError) throw rpcError;
-      const profile = data && data.length > 0 ? data[0] : null;
       if (profile && profile.role === 'pos') {
-        onUnlock(profile);
+        onUnlock(profile, code);
         return;
       }
       // PIN no encontrado o rol incorrecto
@@ -70,8 +71,12 @@ function PinGate({ onUnlock, onMasterClick }) {
         inputRefs.current[0] && inputRefs.current[0].focus();
       }, 500);
     } catch (err) {
-      console.error('verify_pin error:', err);
-      setError('Error de conexión. Verifica tu internet.');
+      console.error('pos_login error:', err);
+      setError(
+        err && err.message === 'too_many_attempts'
+          ? 'Demasiados intentos. Espera 15 minutos e intenta de nuevo.'
+          : 'Error de conexión. Verifica tu internet.'
+      );
       setShake(true);
       setTimeout(() => {
         setShake(false);
@@ -261,7 +266,7 @@ function PosSuccessView({ report, onNew, onLogout }) {
 }
 
 /* ------------ POS REPORT FORM ------------ */
-function PosReportForm({ profile, onLogout }) {
+function PosReportForm({ profile, pin, onLogout }) {
   const [rows, setRows] = useSPos([
     { id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), product: '', requested: '', notes: '' }
   ]);
@@ -322,28 +327,21 @@ function PosReportForm({ profile, onLogout }) {
 
     let savedReport = null;
 
-    // 1) Insertar el reporte en Supabase
+    // 1) Guardar el reporte en Supabase. La RPC vuelve a validar el PIN y
+    //    toma los datos del negocio del servidor; el navegador ya no
+    //    escribe directo en inventory_reports / inventory_report_items.
     try {
-      const { data: reportData, error: reportError } = await sbPos
-        .from('inventory_reports')
-        .insert({
-          pos_id: profile.id,
-          business: profile.business,
-          contact: profile.contact,
-          status: 'Recibido'
-        })
-        .select()
-        .single();
+      const { data: reportData, error: reportError } = await sbPos.rpc('submit_inventory_report', {
+        p_pin: pin,
+        p_items: itemsToInsert
+      });
 
       if (reportError) throw reportError;
-
-      // Insertar los items del reporte
-      const itemsWithReportId = itemsToInsert.map((it) => ({ ...it, report_id: reportData.id }));
-      const { error: itemsError } = await sbPos
-        .from('inventory_report_items')
-        .insert(itemsWithReportId);
-
-      if (itemsError) throw itemsError;
+      if (!reportData) {
+        setSendError('Tu PIN ya no es válido. Sal y vuelve a ingresar tu PIN.');
+        setSending(false);
+        return;
+      }
 
       savedReport = {
         id: reportData.id,
@@ -357,8 +355,12 @@ function PosReportForm({ profile, onLogout }) {
         items: itemsToInsert.map((it) => ({ ...it, notes: it.notes || '' }))
       };
     } catch (err) {
-      console.error('Supabase insert error:', err);
-      setSendError('No se pudo guardar el reporte. Verifica tu internet e intenta de nuevo.');
+      console.error('submit_inventory_report error:', err);
+      setSendError(
+        err && err.message === 'too_many_attempts'
+          ? 'Demasiados intentos de PIN. Espera 15 minutos e intenta de nuevo.'
+          : 'No se pudo guardar el reporte. Verifica tu internet e intenta de nuevo.'
+      );
       setSending(false);
       return;
     }
