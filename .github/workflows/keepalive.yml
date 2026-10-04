@@ -8,18 +8,30 @@ on:
 jobs:
   ping:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Ping Supabase
         env:
           RAW_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_HOST: oaurovkvyrywmdsjhgaj.supabase.co
         run: |
           KEY=$(printf '%s' "$RAW_KEY" | tr -d '[:space:]')
           if [ -z "$KEY" ]; then
-            echo "El secret SUPABASE_ANON_KEY llego vacio"
+            echo "::error::El secret SUPABASE_ANON_KEY llego vacio"
             exit 1
           fi
           echo "Longitud de la llave: ${#KEY}"
-          curl -sS -o /dev/null -w "HTTP %{http_code}\n" \
-            "https://oaurovkvyrywmdsjhgaj.supabase.co/rest/v1/products?select=id&limit=1" \
+
+          # Si el host no resuelve, el proyecto de Supabase esta pausado/eliminado
+          # o la URL es incorrecta: ningun ping lo va a despertar.
+          if ! getent hosts "$SUPABASE_HOST" > /dev/null; then
+            echo "::error::No se pudo resolver $SUPABASE_HOST. Revisa en el dashboard de Supabase que el proyecto exista y no este pausado (si esta pausado, hay que restaurarlo a mano)."
+            exit 1
+          fi
+
+          # --fail: un 401/404/5xx tambien marca el job como fallido.
+          curl -sS --fail --retry 3 --retry-all-errors --max-time 30 \
+            -o /dev/null -w "HTTP %{http_code}\n" \
+            "https://$SUPABASE_HOST/rest/v1/products?select=id&limit=1" \
             -H "apikey: $KEY" \
             -H "Authorization: Bearer $KEY"
