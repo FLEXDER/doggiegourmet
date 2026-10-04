@@ -1,0 +1,63 @@
+name: Deploy
+
+# Publica el sitio en GitHub Pages en cada commit a main.
+# También se puede lanzar a mano: Actions > Deploy > Run workflow.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Si llegan varios commits seguidos, se publica uno a la vez y gana el último.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Copiar archivos del sitio
+        run: |
+          mkdir _site
+          # Todo el repo se publica tal cual, excepto lo que no es parte del sitio.
+          tar -cf - \
+            --exclude=./.git \
+            --exclude=./.github \
+            --exclude=./supabase \
+            --exclude=./README.md \
+            --exclude=./.gitattributes \
+            --exclude=./_site \
+            . | tar -xf - -C _site
+
+      - name: Revisar que no falte nada esencial
+        run: |
+          for f in index.html CNAME 404.html styles.css data.js app.jsx; do
+            if [ ! -f "_site/$f" ]; then
+              echo "::error::Falta _site/$f"
+              exit 1
+            fi
+          done
+          echo "Dominio: $(cat _site/CNAME)"
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
